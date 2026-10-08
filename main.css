@@ -1,0 +1,50 @@
+:root { color-scheme: dark; }
+#app { max-width: 800px; margin: 0 auto; padding: 12px 16px 24px; font-family: ui-monospace, Menlo, Consolas, monospace; color: #e8e8f2; background: #12121f; }
+#topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 2px 10px; font-size: 14px; }
+#level-name { font-weight: bold; font-size: 16px; }
+#door-status { padding: 2px 8px; border: 1px solid #555; border-radius: 4px; }
+#door-status[data-state="open"] { border-color: #b388ff; color: #d1b3ff; }
+#door-status[data-state="flicker"] { border-color: #ffd54f; color: #ffd54f; }
+#notebook-count { opacity: .8; }
+#stage { position: relative; width: 100%; max-width: 768px; margin: 0 auto; }
+#game { display: block; width: 100%; height: auto; aspect-ratio: 768 / 480; image-rendering: pixelated; background: #000; border: 3px solid #2a2a45; border-radius: 4px; outline: none; }
+#game:focus { border-color: #8f7be8; }
+[hidden] { display: none !important; }
+#focus-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(10,10,25,.82); cursor: pointer; text-align: center; padding: 16px; }
+#focus-overlay .big { font-size: 28px; font-weight: bold; }
+.small { font-size: 12px; opacity: .75; }
+.panel { position: absolute; left: 8%; right: 8%; top: 8%; background: rgba(18,18,40,.96); border: 2px solid #8f7be8; border-radius: 6px; padding: 16px 20px; max-height: 84%; overflow: auto; }
+.panel h2 { margin: 0 0 8px; font-size: 18px; }
+.panel .term { color: #ffd54f; font-weight: bold; }
+.circuits { display: flex; gap: 16px; flex-wrap: wrap; }
+.circuits > div { flex: 1 1 200px; }
+pre { margin: 4px 0; padding: 8px; background: #0b0b18; border-radius: 4px; overflow-x: auto; font-size: 14px; line-height: 1.3; }
+#notebook ul { padding-left: 18px; margin: 0; }
+#notebook li { margin: 6px 0; }
+#notebook li.locked { opacity: .4; }
+#notebook code { background: #0b0b18; padding: 1px 5px; border-radius: 3px; }
+#combo-flash { position: absolute; left: 0; right: 0; top: 14%; text-align: center; font-size: 30px; font-weight: bold; color: #ffd54f; text-shadow: 0 2px 0 #000; opacity: 0; pointer-events: none; }
+#combo-flash.show { animation: pop 1.8s ease-out; }
+@keyframes pop { 0% { opacity: 0; transform: scale(.6); } 15% { opacity: 1; transform: scale(1.15); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
+#toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: rgba(0,0,0,.8); padding: 6px 12px; border-radius: 4px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; max-width: 95%; overflow: hidden; text-overflow: ellipsis; }
+#toast.show { opacity: 1; }
+#panel-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+#chars { display: flex; gap: 6px; flex-wrap: wrap; }
+.char-icon { position: relative; width: 62px; text-align: center; padding: 4px 0 2px; border: 2px solid #33334d; border-radius: 6px; background: #1b1b30; }
+.char-icon canvas { width: 48px; height: 48px; image-rendering: pixelated; }
+.char-icon.active { border-color: #ffd54f; background: #2a2a48; }
+.char-icon.dim { opacity: .3; }
+.char-key { position: absolute; top: 2px; left: 4px; font-weight: bold; font-size: 13px; background: #000; padding: 0 4px; border-radius: 3px; }
+.char-name { display: block; font-size: 11px; }
+.shake { animation: shake .35s; }
+@keyframes shake { 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+#combo-wrap { flex: 1 1 160px; min-width: 140px; }
+.label { font-size: 11px; opacity: .7; }
+#combo-bar { min-height: 28px; padding: 4px 8px; background: #0b0b18; border-radius: 4px; font-size: 15px; word-break: break-word; }
+#wheel-wrap { text-align: center; font-size: 11px; }
+#wheel { width: 72px; height: 72px; display: block; margin: 0 auto 2px; }
+#hint-box { margin-top: 10px; padding: 8px 12px; background: #1b1b30; border-left: 4px solid #ffd54f; border-radius: 4px; font-size: 14px; }
+.step.done { opacity: .5; }
+.step.now { font-weight: bold; }
+#legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 12px; font-size: 12px; opacity: .9; }
+kbd { display: inline-block; min-width: 18px; padding: 0 5px; margin-right: 2px; text-align: center; background: #2a2a45; border: 1px solid #55557a; border-radius: 3px; font-family: inherit; }

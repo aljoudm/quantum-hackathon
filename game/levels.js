@@ -1,0 +1,223 @@
+// The 10 levels. Legend: # wall, . floor, P start, G goal, D Day bridge,
+// N Night bridge, 0-3 Ghost gate needing that wheel slot, ? Ghost gate (any
+// slot), E Eye, M magic door.
+// stepOn[i] is the event that completes steps[i] (select:K, skill:K, enter:T,
+// eye, world:W, near:door, goal).
+export const LEVELS = [
+  {
+    id: 1, name: 'The Owl', chars: ['X'], guidance: 'full', startActive: false,
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#..............#',
+      '#.##############',
+      '#.....N......G.#',
+      '################',
+    ],
+    steps: ['Press X to pick the Owl.', 'Press Space to flip the world to Night.', 'Cross the glowing bridge to the star.'],
+    stepOn: ['select:X', 'skill:X', 'goal'],
+    hints: [],
+    card: {
+      text: 'The Owl flips the world between Day and Night. Flip twice and you are back where you started.',
+      term: 'This is called the X gate (a quantum NOT)',
+      circuit: 'q0: ─X─',
+    },
+  },
+  {
+    id: 2, name: 'Goose and Eye', chars: ['H'], guidance: 'full', startActive: false,
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#G.N.E?........#',
+      '################',
+    ],
+    steps: [
+      'Press H to pick the Goose.',
+      'Press Space to turn into a ghost.',
+      'Walk through the shimmering gate onto the Eye.',
+      'Night? Cross the bridge. Day? Become a ghost again and step back onto the Eye.',
+    ],
+    stepOn: ['select:H', 'skill:H', 'eye', 'goal'],
+    hints: [],
+    card: {
+      text: 'The Goose puts the world in Day and Night at once. The Eye forces it to pick one, and nobody can say which.',
+      term: 'This is called superposition, and the Eye is a measurement',
+      circuit: 'q0: ─H─M─',
+    },
+  },
+  {
+    id: 3, name: 'Return', chars: ['H'], guidance: 'hints',
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#G..D.E.?......#',
+      '################',
+    ],
+    steps: [],
+    hints: [
+      'Idea: a ghost can fold back into one world. Do it before the Eye makes the choice for you.',
+      'The Goose does both jobs here.',
+      'H, walk through the gate, H again, then step on the Eye.',
+    ],
+    card: {
+      text: 'Calling the Goose twice puts the world exactly back. No chance involved, the two ghost paths cancel out.',
+      term: 'This is called interference (H is its own undo)',
+      circuit: 'q0: ─H─H─',
+    },
+  },
+  {
+    id: 4, name: 'The Lizard', chars: ['H', 'S'], guidance: 'full',
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#G..1..........#',
+      '################',
+    ],
+    steps: [
+      'Press H, then Space: you become a ghost.',
+      'Press S to pick the Lizard, then Space: the colour wheel turns one slot.',
+      'Walk through the gate that matches the wheel.',
+    ],
+    stepOn: ['skill:H', 'skill:S', 'goal'],
+    hints: [],
+    card: {
+      text: 'A ghost has a hidden colour. The Lizard turns it a quarter. In Day or Night you cannot see it, but a ghost can.',
+      term: 'This is called phase, and this is the S gate',
+      circuit: 'q0: ─H─S─',
+    },
+  },
+  {
+    id: 5, name: 'Two quarters', chars: ['H', 'S'], guidance: 'hints',
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#G.N..2........#',
+      '################',
+    ],
+    steps: [],
+    hints: [
+      'Idea: two quarter turns make a half turn. Turn the ghost first, then fold it back.',
+      'Goose and Lizard. No Owl needed.',
+      'H, S, S, walk through the gate, then H.',
+    ],
+    card: {
+      text: 'Two quarter turns hide a half turn. Folding the ghost back turns that hidden colour into a real change: Night, for sure.',
+      term: 'This is called a phase change showing up through interference (S then S equals Z)',
+      circuit: 'q0: ─H─S─S─H─',
+    },
+  },
+  {
+    id: 6, name: 'The Octopus', chars: ['H', 'Z'], guidance: 'full',
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#G..N.2........#',
+      '################',
+    ],
+    steps: [
+      'Press H, then Space: you become a ghost.',
+      'Press Z to pick the Octopus, then Space: a half turn in one go.',
+      'Walk through the gate.',
+      'Press H to pick the Goose and Space again to land in Night.',
+      'Cross the bridge.',
+    ],
+    stepOn: ['skill:H', 'skill:Z', 'enter:2', 'world:night', 'goal'],
+    hints: [],
+    card: {
+      text: 'The Octopus does a half turn in one move, the same as two Lizard quarters.',
+      term: 'This is called the Z gate (phase flip)',
+      circuit: 'q0: ─H─Z─H─',
+    },
+  },
+  {
+    id: 7, name: 'No owl', chars: ['H', 'S', 'Z'], guidance: 'hints',
+    map: [
+      '################',
+      '#P..2.N........#',
+      '##############.#',
+      '#G.D.0.........#',
+      '################',
+    ],
+    steps: [],
+    hints: [
+      'Idea: reach Night for the first bridge, then Day again for the second.',
+      'Goose with the Octopus or the Lizard. The gates ask for wheel slot 2, then slot 0.',
+      'H Z, gate, H (Night). Later H Z, gate, H (Day). Two Lizard turns can replace each Z.',
+    ],
+    card: {
+      text: 'The same trick works from Night too: a ghost, a half turn, and folding back takes you across to the other world.',
+      term: 'This is called a gate sequence working as a program: H Z H flips the bit',
+      circuit: 'q0: ─H─Z─H─ ... ─H─Z─H─',
+    },
+  },
+  {
+    id: 8, name: 'The Cat', chars: ['X', 'C'], guidance: 'full',
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#G..M..........#',
+      '################',
+    ],
+    steps: [
+      'Press X, then Space: flip to Night.',
+      'Walk next to the magic door.',
+      'Press C to pick the Cat, then Space: link the door to the world.',
+      'Walk through the open door.',
+    ],
+    stepOn: ['skill:X', 'near:door', 'skill:C', 'goal'],
+    hints: [],
+    card: {
+      text: 'The Cat links the door to the world: if it is Night, the door flips. In Day nothing happens.',
+      term: 'This is called the CNOT gate (controlled NOT)',
+      circuit: 'q0: ─X─●─\nq1: ───⊕─',
+    },
+  },
+  {
+    id: 9, name: 'Magic door', chars: ['H', 'C'], guidance: 'hints',
+    map: [
+      '################',
+      '#P.............#',
+      '##############.#',
+      '#G..M..........#',
+      '#####E##########',
+      '################',
+    ],
+    steps: [],
+    hints: [
+      'Idea: link the door to the world while the world is a ghost, then let the Eye decide for both.',
+      'Goose first, then the Cat next to the door, then step on the Eye below.',
+      'H, C next to the door, step on the Eye. If it picked Day, try again.',
+    ],
+    card: {
+      text: 'World and door now share one fate: either Night and open, or Day and closed, never mixed. Looking at one tells you the other.',
+      term: 'This is called entanglement',
+      circuit: 'q0: ─H─●─M─\nq1: ───⊕─M─',
+    },
+  },
+  {
+    id: 10, name: 'Finale', chars: ['X', 'H', 'S', 'Z', 'C'], guidance: 'none',
+    map: [
+      '################',
+      '#P..1.N........#',
+      '##############.#',
+      '#.....M........#',
+      '#.##############',
+      '#..0.D.......G.#',
+      '################',
+    ],
+    steps: [],
+    hints: [],
+    card: {
+      text: 'You used a ghost, a hidden colour, a linked door and the Eye. Every quantum program is built from small gates like these.',
+      term: 'This is called a quantum circuit',
+      circuit: 'q0: ─H─S─S─H─●─H─Z─H─\nq1: ─────────⊕───────',
+    },
+  },
+];
