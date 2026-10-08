@@ -18,7 +18,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
 
   const S = {
     levelIndex: 0, level: null, grid: null, pos: { x: 1, y: 1 }, vx: 1, vy: 1, facing: 1, moving: false, walkFrame: 0, lastMove: 0,
-    active: null, seq: [], history: [], bar: [], amps: qsim.getState([]), vis: deriveVisuals(qsim.getState([])),
+    stars: [], starsGot: 0, need: 2, goalLocked: true, active: null, seq: [], history: [], bar: [], amps: qsim.getState([]), vis: deriveVisuals(qsim.getState([])),
     phase: 'screen', screenFrom: 'menu', stack: [], hintTier: -1, stepIdx: 0, notebook: [], snapAt: -1e9,
   };
   const settings = { guide: true, reference: true, calm: false };
@@ -33,7 +33,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     appEl.classList.toggle('calm', settings.calm);
   };
   const screenCtx = () => ({
-    levels: LEVELS, unlocked, progress, settings, starTotals: LEVELS.map(() => 3),
+    levels: LEVELS, unlocked, progress, settings, starTotals: LEVELS.map((l) => l.stars.length),
     anyCleared: progress.cleared.some(Boolean), howto: HOWTO_HTML, firstRun,
   });
   const screens = createScreens(doc, (a, v) => onAction(a, v));
@@ -110,6 +110,8 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     S.grid = parseLevel(S.level);
     S.pos = { ...S.grid.start };
     S.vx = S.pos.x; S.vy = S.pos.y;
+    S.stars = S.grid.stars.map((st) => ({ ...st })); S.starsGot = 0; S.need = S.grid.need;
+    S.goalLocked = S.need > 0;
     S.seq = []; S.history = []; S.bar = [];
     S.active = S.level.startActive === false ? null : S.level.chars[0];
     S.phase = 'play'; S.hintTier = -1; S.stepIdx = 0;
@@ -118,6 +120,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     hud.setLevel(i + 1, LEVELS.length, S.level.name);
     hud.setChars(S.level.chars, S.active);
     hud.setNotebookCount(S.notebook.length);
+    hud.setStars(0, S.stars.length, S.need);
     hud.setHint('', '');
     showSteps();
     await refresh();
@@ -176,9 +179,12 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     S.phase = 'card';
     const lv = S.level;
     progress.cleared[S.levelIndex] = true;
+    progress.best[S.levelIndex] = Math.max(progress.best[S.levelIndex], S.starsGot);
+    const total = S.starsGot + S.stars.length;
+    const starLine = Array.from({ length: total }, (_, k) => (k < S.starsGot ? '★' : '☆')).join('');
     const mine = renderCircuit(S.history.slice(-12).map((h) => h.t));
     const last = S.levelIndex === LEVELS.length - 1;
-    hud.showCard(`<h2>Level ${lv.id} complete: ${lv.name}</h2><p>${lv.card.text}</p><p class="term">${lv.card.term}</p>` +
+    hud.showCard(`<h2>Level ${lv.id} complete: ${lv.name} <span class="stars">${starLine}</span></h2><p>${lv.card.text}</p><p class="term">${lv.card.term}</p>` +
       `<div class="circuits"><div><div class="small">The idea</div><pre>${lv.card.circuit}</pre></div>` +
       `<div><div class="small">Your circuit</div><pre>${mine}</pre></div></div>` +
       `<div class="row">${last ? '' : '<button data-action="next">Next level</button>'}<button data-action="replay">Replay</button><button data-action="levels">Levels</button></div>` +
@@ -197,8 +203,19 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     S.moving = true; S.walkFrame++;
     emit('enter:' + ch);
     if (nearDoor(S.grid, nx, ny)) emit('near:door');
+    const si = S.stars.findIndex((st) => st.x === nx && st.y === ny);
+    if (si >= 0) {
+      S.stars.splice(si, 1);
+      S.starsGot++;
+      S.goalLocked = S.starsGot < S.need;
+      hud.setStars(S.starsGot, S.stars.length + S.starsGot, S.need);
+      hud.toast(S.goalLocked ? `Star! ${S.starsGot} collected, ${S.need - S.starsGot} more to unlock the finish.` : 'Star! The finish is unlocked.', 1800);
+    }
     if (ch === 'E') await eye();
-    else if (ch === 'G') { emit('goal'); win(); }
+    else if (ch === 'G') {
+      if (S.starsGot < S.need) hud.toast(`The finish needs ${S.need} stars. You have ${S.starsGot}.`, 2600);
+      else { emit('goal'); win(); }
+    }
   }
 
   async function handle(a) {

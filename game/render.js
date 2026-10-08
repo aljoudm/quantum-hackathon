@@ -132,7 +132,12 @@ export function createRenderer(canvas) {
       case 'G': {
         floor();
         const dy = Math.round(Math.sin(t / 300));
-        r(7, 2 + dy, 2, 12, '#ffd54f'); r(2, 7 + dy, 12, 2, '#ffd54f'); r(5, 5 + dy, 6, 6, '#fff176');
+        if (vis.locked) {
+          r(7, 2, 2, 12, '#8a8a8a'); r(2, 7, 12, 2, '#8a8a8a'); r(5, 5, 6, 6, '#b0b0b0');
+          r(6, 7, 4, 4, '#222'); r(7, 5, 2, 3, '#222');
+        } else {
+          r(7, 2 + dy, 2, 12, '#ffd54f'); r(2, 7 + dy, 12, 2, '#ffd54f'); r(5, 5 + dy, 6, 6, '#fff176');
+        }
         break;
       }
       default: floor();
@@ -140,10 +145,22 @@ export function createRenderer(canvas) {
     ctx.restore();
   }
 
+  function drawStar(x, y, ox, oy, t) {
+    ctx.save();
+    ctx.translate((ox + x) * T, (oy + y) * T + Math.round(Math.sin(t / 250 + x)) * U);
+    ctx.scale(U, U);
+    ctx.fillStyle = '#ffd54f';
+    ctx.fillRect(7, 3, 2, 10); ctx.fillRect(3, 7, 10, 2); ctx.fillRect(5, 5, 6, 6);
+    ctx.fillStyle = '#fff59d'; ctx.fillRect(6, 6, 4, 4);
+    ctx.fillStyle = '#111'; ctx.fillRect(7, 7, 2, 2);
+    ctx.restore();
+  }
+
   function layerPass(layer, ox, oy, S, t, alpha) {
     ctx.save();
     ctx.globalAlpha = alpha;
-    S.grid.tiles.forEach((row, y) => row.forEach((ch, x) => tile(ch, x, y, ox, oy, layer, S.vis, t, (x + y) % 2)));
+    const v = S.goalLocked ? { ...S.vis, locked: true } : S.vis;
+    S.grid.tiles.forEach((row, y) => row.forEach((ch, x) => tile(ch, x, y, ox, oy, layer, v, t, (x + y) % 2)));
     ctx.restore();
   }
 
@@ -164,6 +181,7 @@ export function createRenderer(canvas) {
     } else {
       layerPass(vis.world, ox, oy, S, t, 1);
     }
+    S.stars.forEach((st) => drawStar(st.x, st.y, ox, oy, t));
     const px = (ox + S.vx) * T;
     const py = (oy + S.vy) * T;
     const frame = S.moving ? S.walkFrame : 0;

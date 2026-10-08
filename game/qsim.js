@@ -29,18 +29,19 @@ function applyOne(amps, q, m) {
   return out;
 }
 
+export function applyGate(amps, g) {
+  if (g === 'CNOT') {
+    const next = amps.map((a) => a.slice());
+    next[1] = amps[3].slice(); // control q0=1: swap target q1
+    next[3] = amps[1].slice();
+    return next;
+  }
+  return GATES[g] ? applyOne(amps, GATES[g].q, GATES[g].m) : amps;
+}
+
 export function getState(seq) {
   let amps = [[1, 0], [0, 0], [0, 0], [0, 0]];
-  for (const g of parseSeq(seq)) {
-    if (g === 'CNOT') {
-      const next = amps.map((a) => a.slice());
-      next[1] = amps[3].slice(); // control q0=1: swap target q1
-      next[3] = amps[1].slice();
-      amps = next;
-    } else if (GATES[g]) {
-      amps = applyOne(amps, GATES[g].q, GATES[g].m);
-    }
-  }
+  for (const g of parseSeq(seq)) amps = applyGate(amps, g);
   return amps.map(([re, im]) => [Math.abs(re) < 1e-12 ? 0 : re, Math.abs(im) < 1e-12 ? 0 : im]);
 }
 

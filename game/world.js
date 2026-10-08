@@ -16,7 +16,8 @@ export function parseLevel(level) {
   tiles.forEach((row, y) => row.forEach((ch, x) => {
     if (ch === 'P') { start = { x, y }; row[x] = '.'; }
   }));
-  return { w, h: tiles.length, tiles, start };
+  const stars = (level.stars || []).map(([x, y]) => ({ x, y }));
+  return { w, h: tiles.length, tiles, start, stars, need: level.need || 2 };
 }
 
 export function tileAt(grid, x, y) {

@@ -114,9 +114,14 @@ export function createHud(doc) {
   function hideNotebook() { el.notebook.hidden = true; }
   function toggleMenu() { doc.getElementById('settings-menu').hidden = !doc.getElementById('settings-menu').hidden; }
   function closeMenu() { doc.getElementById('settings-menu').hidden = true; }
+  function setStars(got, total, need) {
+    const el2 = $('star-count');
+    el2.textContent = `★ ${got}/${total} · need ${need}`;
+    el2.classList.toggle('ok', got >= need);
+  }
   function setLevel(i, n, name) { el.level.textContent = `Level ${i} of ${n}: ${name}`; }
   function setFocusOverlay(visible) { el.focus.hidden = !visible; }
 
   return { setChars, shake, setBar, setDoor, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
-    showCard, hideCard, showNotebook, hideNotebook, toggleMenu, closeMenu, setLevel, setFocusOverlay, elements: el };
+    showCard, hideCard, showNotebook, hideNotebook, toggleMenu, closeMenu, setStars, setLevel, setFocusOverlay, elements: el };
 }

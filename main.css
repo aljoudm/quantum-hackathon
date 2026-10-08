@@ -60,7 +60,7 @@ button:disabled { opacity: .45; cursor: default; }
 #settings-menu button:hover { background: #3a3a62; }
 
 /* full-stage screens */
-.screen { position: absolute; inset: 0; z-index: 8; background: rgba(12,12,28,.96); overflow: auto; display: flex; justify-content: center; align-items: flex-start; border-radius: 4px; }
+.screen { position: absolute; inset: 0; z-index: 8; background: #0c0c1c; overflow: auto; display: flex; justify-content: center; align-items: flex-start; border-radius: 4px; }
 .screen-inner { width: 100%; max-width: 640px; padding: 22px 20px; text-align: center; }
 .screen h1 { margin: 6px 0 10px; font-size: 26px; }
 .screen h1.title { font-size: 34px; color: #ffd54f; text-shadow: 0 3px 0 #000; margin-top: 12px; }
@@ -85,3 +85,5 @@ button:disabled { opacity: .45; cursor: default; }
 .screen-inner.howto h2 { font-size: 16px; color: #ffd54f; margin: 14px 0 4px; }
 .screen-inner.howto p, .screen-inner.howto li { font-size: 14px; line-height: 1.4; margin: 4px 0; }
 @media (max-width: 600px) { .lv-grid { grid-template-columns: repeat(3, 1fr); } }
+#star-count { padding: 2px 8px; border: 1px solid #55557a; border-radius: 4px; color: #ffd54f; }
+#star-count.ok { border-color: #9ccc65; color: #c5e1a5; }
