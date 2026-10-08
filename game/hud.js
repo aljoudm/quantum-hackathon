@@ -122,6 +122,18 @@ export function createHud(doc, handlers = {}) {
   function hideNotebook() { el.notebook.hidden = true; }
   function toggleMenu() { doc.getElementById('settings-menu').hidden = !doc.getElementById('settings-menu').hidden; }
   function closeMenu() { doc.getElementById('settings-menu').hidden = true; }
+  function setNow(lines) {
+    for (const [k, text] of Object.entries(lines)) {
+      const node = $('now-' + k);
+      if (!node) continue;
+      if (node.textContent !== text) {
+        node.textContent = text;
+        node.classList.remove('changed'); void node.offsetWidth; node.classList.add('changed');
+      }
+      node.hidden = !text;
+    }
+  }
+  function setMission(goal, why) { $('mission-goal').textContent = goal; $('mission-why').textContent = why || ''; }
   function setStars(got, total, need) {
     const el2 = $('star-count');
     el2.textContent = `★ ${got}/${total} · need ${need}`;
@@ -131,5 +143,5 @@ export function createHud(doc, handlers = {}) {
   function setFocusOverlay(visible) { el.focus.hidden = !visible; }
 
   return { setChars, shake, setBar, setDoor, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
-    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, toggleMenu, closeMenu, setStars, setLevel, setFocusOverlay, elements: el };
+    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, toggleMenu, closeMenu, setNow, setMission, setStars, setLevel, setFocusOverlay, elements: el };
 }

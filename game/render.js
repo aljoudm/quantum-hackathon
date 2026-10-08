@@ -4,7 +4,8 @@ export const U = T / 16;  // size of one sprite pixel
 export const COLS = 16;
 export const ROWS = 10;
 // Wheel slot colours: slot 0 at the top, then clockwise.
-export const SLOT_COLORS = ['#ffd54f', '#4db6ac', '#ba68c8', '#ff8a65'];
+export const SLOT_COLORS = ['#ff7043', '#26c6da', '#ba68c8', '#9ccc65'];
+export const SLOT_NAMES = ['orange', 'cyan', 'purple', 'green'];
 
 const PAL = {
   day: { a: '#f1e3b3', b: '#e8d6a0', wall: '#8a6d3b', wallD: '#6b5229', voidC: '#8ecae6', voidD: '#6fb1d4', br: '#c08a4a', brD: '#8f6330', eye: '#ffffff', iris: '#2a9d8f', door: '#7b5a3c' },
@@ -58,92 +59,94 @@ export function drawSprite(ctx, key, x, y, scale = U, frame = 0, flip = false, a
   ctx.restore();
 }
 
+export function drawTile(ctx, ch, tx, ty, ox, oy, layer, vis, t, parity) {
+  const p = PAL[layer];
+  ctx.save();
+  ctx.translate((ox + tx) * T, (oy + ty) * T);
+  ctx.scale(U, U);
+  const r = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+  const floor = () => r(0, 0, 16, 16, parity ? p.a : p.b);
+  const water = () => {
+    r(0, 0, 16, 16, p.voidC);
+    const s = Math.floor(t / 400 + tx) % 4;
+    r(2 + s, 4, 5, 1, p.voidD); r(9 - s, 11, 5, 1, p.voidD);
+  };
+  const bridge = () => {
+    water();
+    r(0, 2, 16, 12, p.br);
+    r(0, 5, 16, 1, p.brD); r(0, 9, 16, 1, p.brD); r(0, 13, 16, 1, p.brD);
+    r(0, 2, 16, 1, p.brD);
+  };
+  switch (ch) {
+    case '#':
+      r(0, 0, 16, 16, p.wall);
+      r(0, 5, 16, 1, p.wallD); r(0, 10, 16, 1, p.wallD); r(8, 0, 1, 5, p.wallD); r(4, 5, 1, 5, p.wallD);
+      r(12, 5, 1, 5, p.wallD); r(8, 10, 1, 6, p.wallD); r(0, 0, 16, 1, 'rgba(255,255,255,0.15)');
+      break;
+    case 'D': if (layer === 'day') bridge(); else water(); break;
+    case 'N': if (layer === 'night') bridge(); else water(); break;
+    case '0': case '1': case '2': case '3': case '?': {
+      floor();
+      const any = ch === '?';
+      const slot = any ? -1 : Number(ch);
+      const col = any ? '#ffffff' : SLOT_COLORS[slot];
+      const open = vis.world === 'ghost' && (any || vis.slot === slot);
+      r(1, 2, 2, 12, col); r(13, 2, 2, 12, col);
+      if (open) {
+        ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t / 250);
+        r(1, 1, 14, 2, col);
+      } else {
+        ctx.globalAlpha = 0.85;
+        r(5, 3, 1, 10, col); r(8, 3, 1, 10, col); r(11, 3, 1, 10, col);
+      }
+      ctx.globalAlpha = 1;
+      // mini wheel: the slot this gate wants is lit
+      const pip = [[7, 5], [10, 7], [7, 9], [4, 7]];
+      pip.forEach(([x, y], i) => r(x, y, 2, 2, any || i === slot ? col : 'rgba(0,0,0,0.35)'));
+      break;
+    }
+    case 'E': {
+      floor();
+      const live = vis.world === 'ghost' || vis.door === 'flicker';
+      r(2, 5, 12, 6, p.eye); r(3, 4, 10, 8, p.eye);
+      r(6, 4, 4, 8, p.iris); r(7, 5, 2, 6, '#111111');
+      r(3, 4, 10, 1, '#111111'); r(3, 11, 10, 1, '#111111');
+      if (!live) { r(2, 4, 12, 4, p.a === PAL.day.a ? '#b9a56b' : '#1f2350'); r(2, 8, 12, 1, '#111111'); }
+      else { ctx.globalAlpha = 0.35 + 0.25 * Math.sin(t / 200); r(1, 3, 14, 10, p.iris); }
+      break;
+    }
+    case 'M': {
+      floor();
+      const state = vis.door === 'flicker' ? (Math.floor(t / 130) % 2 ? 'open' : 'closed') : vis.door;
+      if (state === 'closed') {
+        r(2, 1, 12, 14, p.door); r(2, 5, 12, 1, 'rgba(0,0,0,0.3)'); r(2, 10, 12, 1, 'rgba(0,0,0,0.3)'); r(11, 7, 2, 2, '#ffd54f');
+      } else {
+        r(2, 1, 2, 14, p.door); r(12, 1, 2, 14, p.door); r(2, 1, 12, 2, p.door);
+        ctx.globalAlpha = 0.6; r(4, 3, 8, 12, '#b388ff'); ctx.globalAlpha = 1;
+      }
+      break;
+    }
+    case 'G': {
+      floor();
+      const dy = Math.round(Math.sin(t / 300));
+      if (vis.locked) {
+        r(7, 2, 2, 12, '#8a8a8a'); r(2, 7, 12, 2, '#8a8a8a'); r(5, 5, 6, 6, '#b0b0b0');
+        r(6, 7, 4, 4, '#222'); r(7, 5, 2, 3, '#222');
+      } else {
+        r(7, 2 + dy, 2, 12, '#ffd54f'); r(2, 7 + dy, 12, 2, '#ffd54f'); r(5, 5 + dy, 6, 6, '#fff176');
+      }
+      break;
+    }
+    default: floor();
+  }
+  ctx.restore();
+}
+
+
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
-
-  function tile(ch, tx, ty, ox, oy, layer, vis, t, parity) {
-    const p = PAL[layer];
-    ctx.save();
-    ctx.translate((ox + tx) * T, (oy + ty) * T);
-    ctx.scale(U, U);
-    const r = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
-    const floor = () => r(0, 0, 16, 16, parity ? p.a : p.b);
-    const water = () => {
-      r(0, 0, 16, 16, p.voidC);
-      const s = Math.floor(t / 400 + tx) % 4;
-      r(2 + s, 4, 5, 1, p.voidD); r(9 - s, 11, 5, 1, p.voidD);
-    };
-    const bridge = () => {
-      water();
-      r(0, 2, 16, 12, p.br);
-      r(0, 5, 16, 1, p.brD); r(0, 9, 16, 1, p.brD); r(0, 13, 16, 1, p.brD);
-      r(0, 2, 16, 1, p.brD);
-    };
-    switch (ch) {
-      case '#':
-        r(0, 0, 16, 16, p.wall);
-        r(0, 5, 16, 1, p.wallD); r(0, 10, 16, 1, p.wallD); r(8, 0, 1, 5, p.wallD); r(4, 5, 1, 5, p.wallD);
-        r(12, 5, 1, 5, p.wallD); r(8, 10, 1, 6, p.wallD); r(0, 0, 16, 1, 'rgba(255,255,255,0.15)');
-        break;
-      case 'D': if (layer === 'day') bridge(); else water(); break;
-      case 'N': if (layer === 'night') bridge(); else water(); break;
-      case '0': case '1': case '2': case '3': case '?': {
-        floor();
-        const any = ch === '?';
-        const slot = any ? -1 : Number(ch);
-        const col = any ? '#ffffff' : SLOT_COLORS[slot];
-        const open = vis.world === 'ghost' && (any || vis.slot === slot);
-        r(1, 2, 2, 12, col); r(13, 2, 2, 12, col);
-        if (open) {
-          ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t / 250);
-          r(1, 1, 14, 2, col);
-        } else {
-          ctx.globalAlpha = 0.85;
-          r(5, 3, 1, 10, col); r(8, 3, 1, 10, col); r(11, 3, 1, 10, col);
-        }
-        ctx.globalAlpha = 1;
-        // mini wheel: the slot this gate wants is lit
-        const pip = [[7, 5], [10, 7], [7, 9], [4, 7]];
-        pip.forEach(([x, y], i) => r(x, y, 2, 2, any || i === slot ? col : 'rgba(0,0,0,0.35)'));
-        break;
-      }
-      case 'E': {
-        floor();
-        const live = vis.world === 'ghost' || vis.door === 'flicker';
-        r(2, 5, 12, 6, p.eye); r(3, 4, 10, 8, p.eye);
-        r(6, 4, 4, 8, p.iris); r(7, 5, 2, 6, '#111111');
-        r(3, 4, 10, 1, '#111111'); r(3, 11, 10, 1, '#111111');
-        if (!live) { r(2, 4, 12, 4, p.a === PAL.day.a ? '#b9a56b' : '#1f2350'); r(2, 8, 12, 1, '#111111'); }
-        else { ctx.globalAlpha = 0.35 + 0.25 * Math.sin(t / 200); r(1, 3, 14, 10, p.iris); }
-        break;
-      }
-      case 'M': {
-        floor();
-        const state = vis.door === 'flicker' ? (Math.floor(t / 130) % 2 ? 'open' : 'closed') : vis.door;
-        if (state === 'closed') {
-          r(2, 1, 12, 14, p.door); r(2, 5, 12, 1, 'rgba(0,0,0,0.3)'); r(2, 10, 12, 1, 'rgba(0,0,0,0.3)'); r(11, 7, 2, 2, '#ffd54f');
-        } else {
-          r(2, 1, 2, 14, p.door); r(12, 1, 2, 14, p.door); r(2, 1, 12, 2, p.door);
-          ctx.globalAlpha = 0.6; r(4, 3, 8, 12, '#b388ff'); ctx.globalAlpha = 1;
-        }
-        break;
-      }
-      case 'G': {
-        floor();
-        const dy = Math.round(Math.sin(t / 300));
-        if (vis.locked) {
-          r(7, 2, 2, 12, '#8a8a8a'); r(2, 7, 12, 2, '#8a8a8a'); r(5, 5, 6, 6, '#b0b0b0');
-          r(6, 7, 4, 4, '#222'); r(7, 5, 2, 3, '#222');
-        } else {
-          r(7, 2 + dy, 2, 12, '#ffd54f'); r(2, 7 + dy, 12, 2, '#ffd54f'); r(5, 5 + dy, 6, 6, '#fff176');
-        }
-        break;
-      }
-      default: floor();
-    }
-    ctx.restore();
-  }
+  const tile = (...a) => drawTile(ctx, ...a);
 
   function drawStar(x, y, ox, oy, t) {
     ctx.save();
@@ -211,4 +214,21 @@ export function createRenderer(canvas) {
   }
 
   return { draw };
+}
+
+// Draw one tile into a small canvas (used by the reference board).
+export function drawSwatch(cv, ch, layer, vis, t = 0) {
+  const g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.save();
+  g.scale(cv.width / T, cv.height / T);
+  if (ch === '*') {
+    drawTile(g, '.', 0, 0, 0, 0, layer, vis, t, 0);
+    g.save(); g.scale(U, U);
+    g.fillStyle = '#ffd54f'; g.fillRect(7, 3, 2, 10); g.fillRect(3, 7, 10, 2); g.fillRect(5, 5, 6, 6);
+    g.fillStyle = '#fff59d'; g.fillRect(6, 6, 4, 4); g.fillStyle = '#111'; g.fillRect(7, 7, 2, 2);
+    g.restore();
+  } else drawTile(g, ch, 0, 0, 0, 0, layer, vis, t, 0);
+  g.restore();
 }

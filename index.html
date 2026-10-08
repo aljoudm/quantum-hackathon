@@ -20,36 +20,52 @@
     </div>
   </div>
 
-  <div id="stage">
-    <canvas id="game" width="768" height="480" tabindex="0"></canvas>
-    <div id="focus-overlay"><div class="big">Click to play</div><div class="small">Arrow keys move · letters pick a character · Space uses its skill</div></div>
-    <div id="combo-flash"></div>
-    <div id="screen" class="screen" hidden></div>
-    <div id="toast"></div>
-    <div id="card" class="panel" hidden></div>
-    <div id="notebook" class="panel" hidden></div>
-    <div id="char-panel" class="panel" hidden></div>
-  </div>
+  <div id="layout">
+    <aside id="guide" aria-label="Guide">
+      <section id="mission"><h2>Mission</h2><p id="mission-goal"></p><p id="mission-why" class="small"></p></section>
+      <section id="now"><h2>Right now</h2>
+        <div id="now-char" class="now-line"></div>
+        <div id="now-world" class="now-line"></div>
+        <div id="now-wheel" class="now-line"></div>
+        <div id="now-door" class="now-line"></div>
+        <div id="now-event" class="now-line"></div>
+      </section>
+      <section id="guide-steps"><h2>Guide</h2><div id="hint-box"></div></section>
+    </aside>
 
-  <div id="panel-row">
-    <div id="chars"></div>
-    <div id="combo-wrap"><div class="label">Gates since the last Eye</div><div id="combo-bar">—</div></div>
-    <div id="wheel-wrap"><canvas id="wheel" width="72" height="72"></canvas><div id="wheel-label">Colour wheel (ghost only)</div></div>
-  </div>
+    <div id="center">
+      <div id="stage">
+        <canvas id="game" width="768" height="480" tabindex="0"></canvas>
+        <div id="focus-overlay"><div class="big">Click to play</div><div class="small">Arrow keys move · letters pick a character · Space uses its skill</div></div>
+        <div id="combo-flash"></div>
+        <div id="screen" class="screen" hidden></div>
+        <div id="toast"></div>
+        <div id="card" class="panel" hidden></div>
+        <div id="notebook" class="panel" hidden></div>
+        <div id="char-panel" class="panel" hidden></div>
+      </div>
 
-  <div id="hint-box" hidden></div>
+      <div id="panel-row">
+        <div id="chars"></div>
+        <div id="combo-wrap"><div class="label">Gates since the last Eye</div><div id="combo-bar">—</div></div>
+        <div id="wheel-wrap"><canvas id="wheel" width="72" height="72"></canvas><div id="wheel-label">Colour wheel (ghost only)</div></div>
+      </div>
 
   <div id="legend">
-    <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> Move</span>
-    <span><kbd>X</kbd> Owl</span>
-    <span><kbd>H</kbd> Goose</span>
-    <span><kbd>S</kbd> Lizard</span>
-    <span><kbd>Z</kbd> Octopus</span>
-    <span><kbd>C</kbd> Cat</span>
-    <span><kbd>Space</kbd> Skill</span>
-    <span><kbd>Q</kbd> Hint</span>
-    <span><kbd>R</kbd> Restart</span>
-    <span><kbd>N</kbd> Notebook</span>
-    <span><kbd>Enter</kbd> Next</span>
+      <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> Move</span>
+      <span><kbd>X</kbd> Owl</span>
+      <span><kbd>H</kbd> Goose</span>
+      <span><kbd>S</kbd> Lizard</span>
+      <span><kbd>Z</kbd> Octopus</span>
+      <span><kbd>C</kbd> Cat</span>
+      <span><kbd>Space</kbd> Skill</span>
+      <span><kbd>Q</kbd> Hint</span>
+      <span><kbd>R</kbd> Restart</span>
+      <span><kbd>N</kbd> Notebook</span>
+      <span><kbd>Enter</kbd> Next</span>
+    </div>
+    </div>
+
+    <aside id="reference" aria-label="Maze reference board"><div id="board"></div></aside>
   </div>
 </div>

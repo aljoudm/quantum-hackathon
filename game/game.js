@@ -8,7 +8,8 @@ import { createQuantum } from './quantum.js';
 import { COMBOS, matchCombo, renderCircuit } from './combos.js';
 import * as qsim from './qsim.js';
 import { createScreens } from './screens.js';
-import { HOWTO_HTML, CHAR_INFO } from './text.js';
+import { HOWTO_HTML, CHAR_INFO, charLine, worldLine, wheelLine, doorLine, changeLine } from './text.js';
+import { createBoard } from './board.js';
 
 export function startGame({ core = null, backend = null, doc = document, startLevel = 0, skipMenu = false, unlockAll = false } = {}) {
   const canvas = doc.getElementById('game');
@@ -17,6 +18,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     onSelect: (k) => enqueue({ type: 'select', char: k }),
   });
   const quantum = createQuantum({ core, backend });
+  const board = createBoard(doc);
   const renderer = createRenderer(canvas);
 
   const S = {
@@ -95,6 +97,17 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     hud.setSteps(lv.steps, S.stepIdx);
   }
 
+  function updateNow() {
+    const hasDoor = S.grid && S.grid.tiles.some((r) => r.includes('M'));
+    hud.setNow({
+      char: charLine(S.active, S.level),
+      world: worldLine(S.vis),
+      wheel: wheelLine(S.vis),
+      door: hasDoor || S.vis.door !== 'closed' ? doorLine(S.vis) : '',
+    });
+  }
+  const notice = (text) => hud.setNow({ event: text });
+
   async function refresh() {
     const prev = S.vis;
     S.amps = await quantum.getState(S.seq);
@@ -102,6 +115,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     hud.setDoor(S.vis.door);
     hud.setWheel(S.vis.slot);
     hud.setBar(S.bar);
+    updateNow();
     emit('world:' + S.vis.world);
     if (S.vis.slot !== null) emit('slot:' + S.vis.slot);
     if (S.vis.door === 'open' && prev.door !== 'open') emit('door:open');
@@ -124,6 +138,8 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     hud.setChars(S.level.chars, S.active);
     hud.setNotebookCount(S.notebook.length);
     hud.setStars(0, S.stars.length, S.need);
+    hud.setMission(S.level.goal, S.level.guidance === 'none' ? '' : S.level.why);
+    hud.setNow({ event: '' });
     hud.setHint('', '');
     showSteps();
     await refresh();
@@ -149,12 +165,14 @@ export function startGame({ core = null, backend = null, doc = document, startLe
   async function useSkill() {
     const ch = S.active;
     if (!ch) { hud.toast(`Pick a character first: press ${S.level.chars[0]}.`); return; }
-    if (ch === 'C' && !nearDoor(S.grid, S.pos.x, S.pos.y)) { hud.toast('The Cat must stand next to a magic door.'); return; }
+    if (ch === 'C' && !nearDoor(S.grid, S.pos.x, S.pos.y)) { hud.toast('The Cat must stand next to a magic door.'); notice('The Cat needs to stand right next to a magic door before it can link it.'); return; }
     const g = gateToken(ch);
     addToken(g);
     S.seq.push(g);
     checkCombos();
+    const prev = S.vis;
     await refresh();
+    notice(changeLine(CHARACTERS[ch].name, g, prev, S.vis));
     emit('skill:' + ch);
   }
 
@@ -175,6 +193,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     S.bar = [];
     S.snapAt = performance.now();
     await refresh();
+    notice(`The Eye measured: ${q0 ? 'Night' : 'Day'}${S.level.chars.includes('C') || q1 ? ` and the door is ${q1 ? 'open' : 'closed'}` : ''}. The ghost collapsed to one world.`);
     emit('eye');
   }
 
@@ -215,6 +234,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
       S.starsGot++;
       S.goalLocked = S.starsGot < S.need;
       hud.setStars(S.starsGot, S.stars.length + S.starsGot, S.need);
+      notice(S.goalLocked ? `Star ${S.starsGot}! Collect ${S.need - S.starsGot} more to unlock the finish.` : 'Star! The finish is unlocked: go to the big star.');
       hud.toast(S.goalLocked ? `Star! ${S.starsGot} collected, ${S.need - S.starsGot} more to unlock the finish.` : 'Star! The finish is unlocked.', 1800);
     }
     if (ch === 'E') await eye();
@@ -264,7 +284,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
       case 'move': await move(a.dx, a.dy); break;
       case 'select':
         if (!S.level.chars.includes(a.char)) { hud.shake(a.char); break; }
-        S.active = a.char; hud.setChars(S.level.chars, S.active); emit('select:' + a.char); break;
+        S.active = a.char; hud.setChars(S.level.chars, S.active); updateNow(); emit('select:' + a.char); break;
       case 'skill': await useSkill(); break;
       case 'hint':
         if (S.level.guidance === 'hints') {
@@ -311,11 +331,13 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     if (m === 'menu') onAction('menu'); else openScreen(m, { push: false });
   });
 
+  let frames = 0;
   function frame(t) {
     const k = 0.35;
     S.vx += (S.pos.x - S.vx) * k; S.vy += (S.pos.y - S.vy) * k;
     if (Math.abs(S.pos.x - S.vx) < 0.02 && Math.abs(S.pos.y - S.vy) < 0.02) { S.vx = S.pos.x; S.vy = S.pos.y; S.moving = false; }
     renderer.draw(S, t);
+    if (++frames % 8 === 0) board.redraw(t);
     requestAnimationFrame(frame);
   }
 

@@ -1,5 +1,5 @@
 :root { color-scheme: dark; }
-#app { max-width: 800px; margin: 0 auto; padding: 12px 16px 24px; font-family: ui-monospace, Menlo, Consolas, monospace; color: #e8e8f2; background: #12121f; }
+#app { max-width: 1320px; margin: 0 auto; padding: 12px 16px 24px; font-family: ui-monospace, Menlo, Consolas, monospace; color: #e8e8f2; background: #12121f; }
 #topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 2px 10px; font-size: 14px; }
 #level-name { font-weight: bold; font-size: 16px; }
 #door-status { padding: 2px 8px; border: 1px solid #555; border-radius: 4px; }
@@ -94,3 +94,35 @@ button:disabled { opacity: .45; cursor: default; }
 .char-info { display: block; margin: 3px auto 0; padding: 0 4px; font-size: 10px; line-height: 14px; background: #2a2a48; }
 .char-icon { cursor: pointer; width: 66px; }
 #char-panel code { background: #0b0b18; padding: 1px 5px; border-radius: 3px; }
+
+/* three-column layout: guide | game | reference board */
+#layout { display: grid; grid-template-columns: 250px minmax(0, 768px) 250px; gap: 14px; justify-content: center; align-items: start; }
+#center { min-width: 0; }
+#guide, #reference { font-size: 13px; line-height: 1.4; }
+#guide section { background: #1b1b30; border: 1px solid #33334d; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; }
+#guide h2, #board h2 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: #ffd54f; }
+#guide p { margin: 4px 0; }
+.now-line { padding: 5px 6px; margin: 4px 0; background: #12122a; border-left: 3px solid #8f7be8; border-radius: 3px; }
+.now-line:empty { display: none; }
+#now-event { border-left-color: #ffd54f; }
+.now-line.changed { animation: nowflash .9s ease-out; }
+@keyframes nowflash { from { background: #3a3a70; } to { background: #12122a; } }
+.calm .now-line.changed, .calm .shake, .calm #combo-flash.show { animation: none; }
+#guide #hint-box { margin: 0; padding: 0; background: none; border: 0; font-size: 13px; }
+#guide #hint-box:empty::before { content: "No instructions for this level. Press Q for a hint if hints are available."; opacity: .6; }
+#guide #hint-box[hidden] { display: block !important; }
+#reference #board { background: #1b1b30; border: 1px solid #33334d; border-radius: 6px; padding: 8px 10px; }
+#board .entry { padding: 8px 0; border-top: 1px solid #33334d; }
+#board h3 { margin: 0 0 4px; font-size: 14px; }
+#board .swatches { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
+#board .swatches canvas { width: 32px; height: 32px; image-rendering: pixelated; border: 1px solid #000; }
+#board .rows div { margin: 2px 0; }
+#board .rows b { color: #ffd54f; font-weight: normal; }
+.no-guide #guide, .no-ref #reference { display: none; }
+.no-guide #layout { grid-template-columns: minmax(0, 768px) 250px; }
+.no-ref #layout { grid-template-columns: 250px minmax(0, 768px); }
+.no-guide.no-ref #layout { grid-template-columns: minmax(0, 768px); }
+@media (max-width: 1240px) {
+  #layout, .no-guide #layout, .no-ref #layout { grid-template-columns: minmax(0, 768px); }
+  #center { order: 1; } #guide { order: 2; } #reference { order: 3; }
+}

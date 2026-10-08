@@ -68,3 +68,47 @@ export const CHAR_INFO = {
     line: 'Cat (CNOT gate): links the door to the world: flips the door if it is Night. Stand next to a door.',
   },
 };
+
+// ---- persistent one-line state notifications (left panel) ----
+import { SLOT_NAMES } from './render.js';
+
+const TURNS = ['no turn yet', 'one quarter turn', 'a half turn', 'three quarter turns'];
+
+export function charLine(active, level) {
+  if (!active) return `No character picked yet. Press ${level.chars[0]} to pick the ${{ X: 'Owl', H: 'Goose', S: 'Lizard', Z: 'Octopus', C: 'Cat' }[level.chars[0]]}.`;
+  return CHAR_INFO[active].line;
+}
+
+export function worldLine(vis) {
+  if (vis.world === 'day') return 'Day: the world is certainly Day (state 0). Day bridges are solid.';
+  if (vis.world === 'night') return 'Night: the world is certainly Night (state 1). Night bridges are solid.';
+  return 'Ghost Mode: the world is Day AND Night at once (superposition). Ghost gates open, bridges are water. The Eye will force a choice.';
+}
+
+export function wheelLine(vis) {
+  if (vis.world !== 'ghost') return 'Ghost colour: only a ghost has one. In plain Day or Night it is invisible.';
+  const n = SLOT_NAMES[vis.slot];
+  return `Ghost colour: slot ${vis.slot} (${n}), ${TURNS[vis.slot]}. Only ${n} gates (and white ones) open now.`;
+}
+
+export function doorLine(vis) {
+  if (vis.door === 'open') return 'Magic door: open (state 1). It stays open until the Cat flips it again.';
+  if (vis.door === 'flicker') return 'Magic door: linked to the world, open AND closed at once (entangled). Step on the Eye to settle both.';
+  return 'Magic door: closed (state 0). The Cat opens it, but only when the world is Night.';
+}
+
+// what a skill just did, in one line
+export function changeLine(name, gate, prev, cur) {
+  const head = `${name} used ${gate}: `;
+  if (prev.world !== cur.world) {
+    if (cur.world === 'ghost') return head + 'the world is now a ghost, Day and Night at once.';
+    if (prev.world === 'ghost') return head + `the ghost folded back into ${cur.world === 'day' ? 'Day' : 'Night'}, for certain.`;
+    return head + `the world flipped to ${cur.world === 'day' ? 'Day' : 'Night'}.`;
+  }
+  if (cur.world === 'ghost' && prev.slot !== cur.slot) return head + `the ghost colour moved from slot ${prev.slot} to slot ${cur.slot} (${SLOT_NAMES[cur.slot]}).`;
+  if (prev.door !== cur.door) return head + `the door is now ${cur.door === 'flicker' ? 'linked to the world' : cur.door}.`;
+  if (gate === 'CNOT') return head + (cur.world === 'day' ? 'the world is Day, so the door did not flip.' : 'nothing new to link.');
+  if (gate === 'S' || gate === 'Z') return head + 'the colour turned, but in plain Day or Night you cannot see it. Make a ghost first (H).';
+  if (cur.world === 'ghost') return head + 'the ghost stays a ghost, but its odds are different.';
+  return head + 'no visible change.';
+}
