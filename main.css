@@ -13,7 +13,7 @@
 #focus-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(10,10,25,.82); cursor: pointer; text-align: center; padding: 16px; }
 #focus-overlay .big { font-size: 28px; font-weight: bold; }
 .small { font-size: 12px; opacity: .75; }
-.panel { position: absolute; left: 8%; right: 8%; top: 8%; background: rgba(18,18,40,.96); border: 2px solid #8f7be8; border-radius: 6px; padding: 16px 20px; max-height: 84%; overflow: auto; }
+.panel { position: absolute; left: 8%; right: 8%; top: 8%; background: #121228; border: 2px solid #8f7be8; border-radius: 6px; padding: 16px 20px; max-height: 84%; overflow: auto; }
 .panel h2 { margin: 0 0 8px; font-size: 18px; }
 .panel .term { color: #ffd54f; font-weight: bold; }
 .circuits { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -87,3 +87,10 @@ button:disabled { opacity: .45; cursor: default; }
 @media (max-width: 600px) { .lv-grid { grid-template-columns: repeat(3, 1fr); } }
 #star-count { padding: 2px 8px; border: 1px solid #55557a; border-radius: 4px; color: #ffd54f; }
 #star-count.ok { border-color: #9ccc65; color: #c5e1a5; }
+.panel h3 { margin: 10px 0 2px; font-size: 13px; color: #ffd54f; text-transform: uppercase; letter-spacing: .5px; }
+.panel p { margin: 4px 0; font-size: 14px; line-height: 1.4; }
+.panel .row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+.stars { color: #ffd54f; letter-spacing: 2px; }
+.char-info { display: block; margin: 3px auto 0; padding: 0 4px; font-size: 10px; line-height: 14px; background: #2a2a48; }
+.char-icon { cursor: pointer; width: 66px; }
+#char-panel code { background: #0b0b18; padding: 1px 5px; border-radius: 3px; }

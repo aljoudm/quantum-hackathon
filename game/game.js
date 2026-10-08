@@ -8,11 +8,14 @@ import { createQuantum } from './quantum.js';
 import { COMBOS, matchCombo, renderCircuit } from './combos.js';
 import * as qsim from './qsim.js';
 import { createScreens } from './screens.js';
-import { HOWTO_HTML } from './text.js';
+import { HOWTO_HTML, CHAR_INFO } from './text.js';
 
 export function startGame({ core = null, backend = null, doc = document, startLevel = 0, skipMenu = false, unlockAll = false } = {}) {
   const canvas = doc.getElementById('game');
-  const hud = createHud(doc);
+  const hud = createHud(doc, {
+    onInfo: (k) => enqueue({ type: 'info', char: k }),
+    onSelect: (k) => enqueue({ type: 'select', char: k }),
+  });
   const quantum = createQuantum({ core, backend });
   const renderer = createRenderer(canvas);
 
@@ -184,7 +187,10 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     const starLine = Array.from({ length: total }, (_, k) => (k < S.starsGot ? '★' : '☆')).join('');
     const mine = renderCircuit(S.history.slice(-12).map((h) => h.t));
     const last = S.levelIndex === LEVELS.length - 1;
-    hud.showCard(`<h2>Level ${lv.id} complete: ${lv.name} <span class="stars">${starLine}</span></h2><p>${lv.card.text}</p><p class="term">${lv.card.term}</p>` +
+    hud.showCard(`<h2>Level ${lv.id} complete: ${lv.name} <span class="stars">${starLine}</span></h2>` +
+      `<h3>What happened</h3><p>${lv.why}</p>` +
+      `<h3>The concept</h3><p>${lv.card.text}</p><p class="term">${lv.card.term}</p>` +
+      `<h3>Why it is useful</h3><p>${lv.card.useful}</p>` +
       `<div class="circuits"><div><div class="small">The idea</div><pre>${lv.card.circuit}</pre></div>` +
       `<div><div class="small">Your circuit</div><pre>${mine}</pre></div></div>` +
       `<div class="row">${last ? '' : '<button data-action="next">Next level</button>'}<button data-action="replay">Replay</button><button data-action="levels">Levels</button></div>` +
@@ -228,6 +234,21 @@ export function startGame({ core = null, backend = null, doc = document, startLe
       }
       return;
     }
+    if (S.phase === 'info') {
+      if (['menu', 'confirm', 'info', 'skill'].includes(a.type)) { S.phase = S.infoFrom; hud.hideInfo(); }
+      return;
+    }
+    if (a.type === 'info') {
+      if (S.phase === 'notebook') { hud.hideNotebook(); }
+      const c = CHAR_INFO[a.char];
+      S.infoFrom = S.phase === 'card' ? 'card' : 'play';
+      S.phase = 'info';
+      hud.showInfo(`<h2>${CHARACTERS[a.char].name} · ${CHARACTERS[a.char].gate === 'CNOT' ? 'CNOT' : a.char} key</h2>` +
+        `<p>${c.who}</p><p class="term">${c.gate}</p>` +
+        `<p><b>In quantum computing:</b> ${c.quantum}</p><p><b>In this game:</b> ${c.game}</p>` +
+        `<p><b>The maths:</b> <code>${c.math}</code></p><p class="small">Press Enter or Esc to close.</p>`);
+      return;
+    }
     if (a.type === 'menu') { openScreen('pause'); return; }
     if (S.phase === 'card') {
       if (a.type === 'confirm') await onAction(S.levelIndex === LEVELS.length - 1 ? 'replay' : 'next');
@@ -256,11 +277,12 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     }
   }
 
-  createInput(canvas, (a) => {
+  function enqueue(a) {
     if (a.type === 'move' && pending > 2) return;
     pending++;
     queue = queue.then(() => handle(a)).catch((err) => console.error('[game] action failed', err)).finally(() => { pending--; });
-  });
+  }
+  createInput(canvas, enqueue);
 
   // focus handling: any click inside the game gives the canvas keyboard focus back
   const stage = doc.getElementById('stage');

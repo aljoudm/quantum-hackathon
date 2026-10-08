@@ -3,12 +3,12 @@ import { CHARACTERS, CHAR_ORDER } from './world.js';
 import { drawSprite, SLOT_COLORS } from './render.js';
 import { COMBOS } from './combos.js';
 
-export function createHud(doc) {
+export function createHud(doc, handlers = {}) {
   const $ = (id) => doc.getElementById(id);
   const el = {
     level: $('level-name'), door: $('door-status'), nbCount: $('notebook-count'), chars: $('chars'),
     bar: $('combo-bar'), wheel: $('wheel'), wheelLabel: $('wheel-label'), hint: $('hint-box'),
-    card: $('card'), notebook: $('notebook'), flash: $('combo-flash'), toast: $('toast'), focus: $('focus-overlay'),
+    card: $('card'), info: $('char-panel'), notebook: $('notebook'), flash: $('combo-flash'), toast: $('toast'), focus: $('focus-overlay'),
     canvas: $('game'),
   };
   const icons = {};
@@ -26,7 +26,13 @@ export function createHud(doc) {
     const name = doc.createElement('span');
     name.className = 'char-name';
     name.textContent = CHARACTERS[k].name;
-    box.append(cv, key, name);
+    const info = doc.createElement('button');
+    info.className = 'char-info';
+    info.textContent = 'ⓘ info';
+    info.title = `Who is the ${CHARACTERS[k].name}?`;
+    info.addEventListener('click', () => { if (handlers.onInfo) handlers.onInfo(k); });
+    box.addEventListener('click', (e) => { if (!e.target.closest('.char-info') && handlers.onSelect) handlers.onSelect(k); });
+    box.append(cv, key, name, info);
     el.chars.append(box);
     icons[k] = box;
   }
@@ -111,6 +117,8 @@ export function createHud(doc) {
     el.notebook.innerHTML = `<h2>Notebook</h2><ul>${rows}</ul><p class="small">Press N to close</p>`;
     el.notebook.hidden = false;
   }
+  function showInfo(html) { el.info.innerHTML = html; el.info.hidden = false; }
+  function hideInfo() { el.info.hidden = true; }
   function hideNotebook() { el.notebook.hidden = true; }
   function toggleMenu() { doc.getElementById('settings-menu').hidden = !doc.getElementById('settings-menu').hidden; }
   function closeMenu() { doc.getElementById('settings-menu').hidden = true; }
@@ -123,5 +131,5 @@ export function createHud(doc) {
   function setFocusOverlay(visible) { el.focus.hidden = !visible; }
 
   return { setChars, shake, setBar, setDoor, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
-    showCard, hideCard, showNotebook, hideNotebook, toggleMenu, closeMenu, setStars, setLevel, setFocusOverlay, elements: el };
+    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, toggleMenu, closeMenu, setStars, setLevel, setFocusOverlay, elements: el };
 }
