@@ -112,9 +112,11 @@ export function createHud(doc) {
     el.notebook.hidden = false;
   }
   function hideNotebook() { el.notebook.hidden = true; }
+  function toggleMenu() { doc.getElementById('settings-menu').hidden = !doc.getElementById('settings-menu').hidden; }
+  function closeMenu() { doc.getElementById('settings-menu').hidden = true; }
   function setLevel(i, n, name) { el.level.textContent = `Level ${i} of ${n}: ${name}`; }
   function setFocusOverlay(visible) { el.focus.hidden = !visible; }
 
   return { setChars, shake, setBar, setDoor, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
-    showCard, hideCard, showNotebook, hideNotebook, setLevel, setFocusOverlay, elements: el };
+    showCard, hideCard, showNotebook, hideNotebook, toggleMenu, closeMenu, setLevel, setFocusOverlay, elements: el };
 }

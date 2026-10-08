@@ -17,7 +17,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PAT
 const page = await browser.newPage({ viewport: { width: 900, height: 1000 } });
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
-await page.goto(`http://127.0.0.1:${PORT}/dev.html`);
+await page.goto(`http://127.0.0.1:${PORT}/dev.html?level=1&unlock=1`);
 await page.waitForFunction(() => window.__game && window.__game.state.level);
 await page.click('#focus-overlay');
 await page.waitForFunction(() => document.activeElement.id === 'game');

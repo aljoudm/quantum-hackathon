@@ -3,12 +3,27 @@
     <div id="level-name">Quantum Gate Maze</div>
     <div id="door-status" data-state="closed">Door: closed</div>
     <div id="notebook-count">Notebook 0/9 · N</div>
+    <div id="top-buttons">
+      <button id="btn-restart" title="Restart this level (R)">↻ Restart level</button>
+      <div id="settings-wrap">
+        <button id="btn-settings" title="Menu (Esc)">⚙ Settings</button>
+        <div id="settings-menu" hidden>
+          <button data-menu="resume">Resume</button>
+          <button data-menu="retry">Retry level</button>
+          <button data-menu="levels">Levels</button>
+          <button data-menu="settings">Settings</button>
+          <button data-menu="howto">How to play</button>
+          <button data-menu="menu">Main menu</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="stage">
     <canvas id="game" width="768" height="480" tabindex="0"></canvas>
     <div id="focus-overlay"><div class="big">Click to play</div><div class="small">Arrow keys move · letters pick a character · Space uses its skill</div></div>
     <div id="combo-flash"></div>
+    <div id="screen" class="screen" hidden></div>
     <div id="toast"></div>
     <div id="card" class="panel" hidden></div>
     <div id="notebook" class="panel" hidden></div>

@@ -7,8 +7,10 @@ import { createInput } from './input.js';
 import { createQuantum } from './quantum.js';
 import { COMBOS, matchCombo, renderCircuit } from './combos.js';
 import * as qsim from './qsim.js';
+import { createScreens } from './screens.js';
+import { HOWTO_HTML } from './text.js';
 
-export function startGame({ core = null, backend = null, doc = document, startLevel = 0 } = {}) {
+export function startGame({ core = null, backend = null, doc = document, startLevel = 0, skipMenu = false, unlockAll = false } = {}) {
   const canvas = doc.getElementById('game');
   const hud = createHud(doc);
   const quantum = createQuantum({ core, backend });
@@ -17,8 +19,63 @@ export function startGame({ core = null, backend = null, doc = document, startLe
   const S = {
     levelIndex: 0, level: null, grid: null, pos: { x: 1, y: 1 }, vx: 1, vy: 1, facing: 1, moving: false, walkFrame: 0, lastMove: 0,
     active: null, seq: [], history: [], bar: [], amps: qsim.getState([]), vis: deriveVisuals(qsim.getState([])),
-    phase: 'play', hintTier: -1, stepIdx: 0, notebook: [], snapAt: -1e9,
+    phase: 'screen', screenFrom: 'menu', stack: [], hintTier: -1, stepIdx: 0, notebook: [], snapAt: -1e9,
   };
+  const settings = { guide: true, reference: true, calm: false };
+  const progress = { cleared: LEVELS.map(() => false), best: LEVELS.map(() => 0) };
+  let firstRun = true;
+  const unlocked = (i) => unlockAll || i === 0 || progress.cleared[i] || progress.cleared[i - 1];
+  const highest = () => { const i = progress.cleared.indexOf(false); return i === -1 ? LEVELS.length - 1 : i; };
+  const appEl = doc.getElementById('app');
+  const applySettings = () => {
+    appEl.classList.toggle('no-guide', !settings.guide);
+    appEl.classList.toggle('no-ref', !settings.reference);
+    appEl.classList.toggle('calm', settings.calm);
+  };
+  const screenCtx = () => ({
+    levels: LEVELS, unlocked, progress, settings, starTotals: LEVELS.map(() => 3),
+    anyCleared: progress.cleared.some(Boolean), howto: HOWTO_HTML, firstRun,
+  });
+  const screens = createScreens(doc, (a, v) => onAction(a, v));
+
+  function openScreen(name, { push = true } = {}) {
+    if (S.phase !== 'screen') { S.screenFrom = S.phase; S.stack = []; }
+    else if (push && screens.current) S.stack.push(screens.current);
+    S.phase = 'screen';
+    hud.closeMenu();
+    screens.show(name, screenCtx());
+  }
+  function closeScreen() {
+    screens.hide();
+    S.stack = [];
+    S.phase = S.screenFrom === 'card' ? 'card' : 'play';
+  }
+  function backScreen() {
+    const prev = S.stack.pop();
+    if (prev) screens.show(prev, screenCtx()); else closeScreen();
+  }
+  async function onAction(a, v) {
+    switch (a) {
+      case 'start':
+        if (firstRun) { openScreen('howto'); break; }
+        await loadLevel(highest()); break;
+      case 'begin': firstRun = false; await loadLevel(highest()); break;
+      case 'levels': openScreen('levels'); break;
+      case 'settings': openScreen('settings'); break;
+      case 'howto': openScreen('howto'); break;
+      case 'back': backScreen(); break;
+      case 'resume': closeScreen(); break;
+      case 'retry': case 'replay': await loadLevel(S.levelIndex); break;
+      case 'level': await loadLevel(Number(v)); break;
+      case 'next': await loadLevel(Math.min(S.levelIndex + 1, LEVELS.length - 1)); break;
+      case 'menu': S.screenFrom = S.phase === 'screen' ? S.screenFrom : S.phase; S.phase = 'screen'; S.stack = []; hud.closeMenu(); screens.show('menu', screenCtx()); break;
+      case 'toggle': settings[v] = !settings[v]; applySettings(); screens.show('settings', screenCtx()); break;
+      case 'reset':
+        progress.cleared.fill(false); progress.best.fill(0); S.notebook = []; hud.setNotebookCount(0);
+        screens.show('settings', screenCtx()); hud.toast('Progress reset.'); break;
+      default: break;
+    }
+  }
   let queue = Promise.resolve();
   let pending = 0;
 
@@ -56,7 +113,8 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     S.seq = []; S.history = []; S.bar = [];
     S.active = S.level.startActive === false ? null : S.level.chars[0];
     S.phase = 'play'; S.hintTier = -1; S.stepIdx = 0;
-    hud.hideCard();
+    screens.hide(); S.stack = [];
+    hud.hideCard(); hud.hideNotebook();
     hud.setLevel(i + 1, LEVELS.length, S.level.name);
     hud.setChars(S.level.chars, S.active);
     hud.setNotebookCount(S.notebook.length);
@@ -117,12 +175,14 @@ export function startGame({ core = null, backend = null, doc = document, startLe
   function win() {
     S.phase = 'card';
     const lv = S.level;
+    progress.cleared[S.levelIndex] = true;
     const mine = renderCircuit(S.history.slice(-12).map((h) => h.t));
     const last = S.levelIndex === LEVELS.length - 1;
     hud.showCard(`<h2>Level ${lv.id} complete: ${lv.name}</h2><p>${lv.card.text}</p><p class="term">${lv.card.term}</p>` +
       `<div class="circuits"><div><div class="small">The idea</div><pre>${lv.card.circuit}</pre></div>` +
       `<div><div class="small">Your circuit</div><pre>${mine}</pre></div></div>` +
-      `<p class="small">Press Enter ${last ? 'to play again' : 'for the next level'}</p>`);
+      `<div class="row">${last ? '' : '<button data-action="next">Next level</button>'}<button data-action="replay">Replay</button><button data-action="levels">Levels</button></div>` +
+      `<p class="small">Enter: ${last ? 'play again' : 'next level'} · R: replay</p>`);
   }
 
   async function move(dx, dy) {
@@ -142,11 +202,19 @@ export function startGame({ core = null, backend = null, doc = document, startLe
   }
 
   async function handle(a) {
+    if (S.phase === 'screen') {
+      if (a.type === 'move') screens.nav(a.dx, a.dy);
+      else if (a.type === 'confirm' || a.type === 'skill') screens.activate();
+      else if (a.type === 'menu') {
+        if (screens.current === 'pause') closeScreen();
+        else if (screens.current !== 'menu') backScreen();
+      }
+      return;
+    }
+    if (a.type === 'menu') { openScreen('pause'); return; }
     if (S.phase === 'card') {
-      if (a.type === 'confirm') {
-        const next = S.levelIndex + 1;
-        await loadLevel(next >= LEVELS.length ? 0 : next);
-      } else if (a.type === 'restart') await loadLevel(S.levelIndex);
+      if (a.type === 'confirm') await onAction(S.levelIndex === LEVELS.length - 1 ? 'replay' : 'next');
+      else if (a.type === 'restart') await loadLevel(S.levelIndex);
       return;
     }
     if (a.type === 'notebook') {
@@ -177,12 +245,32 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     queue = queue.then(() => handle(a)).catch((err) => console.error('[game] action failed', err)).finally(() => { pending--; });
   });
 
-  // focus overlay
+  // focus handling: any click inside the game gives the canvas keyboard focus back
   const stage = doc.getElementById('stage');
-  stage.addEventListener('mousedown', () => setTimeout(() => canvas.focus(), 0));
+  const refocus = () => setTimeout(() => canvas.focus(), 0);
+  stage.addEventListener('mousedown', refocus);
+  appEl.addEventListener('click', (e) => { if (e.target.closest('button')) refocus(); });
   canvas.addEventListener('focus', () => hud.setFocusOverlay(false));
   canvas.addEventListener('blur', () => hud.setFocusOverlay(true));
   hud.setFocusOverlay(doc.activeElement !== canvas);
+
+  // card buttons, top bar buttons, settings dropdown
+  doc.getElementById('card').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-action]');
+    if (b) onAction(b.dataset.action, b.dataset.value);
+  });
+  doc.getElementById('btn-restart').addEventListener('click', () => { queue = queue.then(() => loadLevel(S.levelIndex)); });
+  doc.getElementById('btn-settings').addEventListener('click', () => hud.toggleMenu());
+  doc.getElementById('settings-menu').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-menu]');
+    if (!b) return;
+    const m = b.dataset.menu;
+    hud.closeMenu();
+    if (m === 'resume') { if (S.phase === 'screen' && screens.current !== 'menu') closeScreen(); return; }
+    if (m === 'retry') { onAction('retry'); return; }
+    if (S.phase === 'notebook') { S.phase = 'play'; hud.hideNotebook(); }
+    if (m === 'menu') onAction('menu'); else openScreen(m, { push: false });
+  });
 
   function frame(t) {
     const k = 0.35;
@@ -192,7 +280,11 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     requestAnimationFrame(frame);
   }
 
-  const ready = loadLevel(startLevel).then(() => { requestAnimationFrame(frame); });
+  applySettings();
+  const ready = loadLevel(startLevel).then(() => {
+    if (!skipMenu) { S.phase = 'screen'; S.screenFrom = 'play'; screens.show('menu', screenCtx()); }
+    requestAnimationFrame(frame);
+  });
   hud.setWheel(null);
   return { state: S, ready, quantum, loadLevel };
 }
