@@ -72,6 +72,7 @@ Local simulators allow unlimited jobs.
 - `dev.html` (not uploaded to Qollab) runs the game with the JS simulator only: `python3 -m http.server`, then open `/dev.html?level=3`.
 - `node tests/combos.test.mjs` checks the combo table against `qsim.js`; `python tests/test_core.py` checks it against `core.py` (needs `qiskit`).
 - `node tests/levels.test.mjs` solves every level headlessly and checks the intended characters are required.
+- `node tests/adapter.test.mjs` checks the Qiskit-to-qsim fallbacks (including the IonQ one-job limit); `dev.html?mock=1` exercises them in the browser.
 - `node tests/e2e.mjs` plays all 10 levels in headless Chromium (needs Playwright).
 
 ## Tools used
