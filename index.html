@@ -48,7 +48,17 @@
       <div id="panel-row">
         <div id="chars"></div>
         <div id="combo-wrap"><div class="label">Gates since the last Eye</div><div id="combo-bar">—</div></div>
-        <div id="wheel-wrap"><canvas id="wheel" width="72" height="72"></canvas><div id="wheel-label">Colour wheel (ghost only)</div></div>
+        <div id="wheel-wrap">
+          <canvas id="wheel" width="150" height="150"></canvas>
+          <div id="wheel-info">
+            <div id="wheel-label">Qubit view</div>
+            <div class="lg"><i style="background:#ffd54f"></i> Top pole = state 0 = <b>Day</b></div>
+            <div class="lg"><i style="background:#5c6bc0"></i> Bottom pole = state 1 = <b>Night</b></div>
+            <div class="lg"><i class="ring"></i> Ring (equator) = <b>superposition</b>: the Ghost</div>
+            <div class="lg"><i style="background:#ff7043"></i><i style="background:#26c6da"></i><i style="background:#ba68c8"></i><i style="background:#9ccc65"></i> Ring dots 0 to 3 = <b>ghost colour</b> (phase) slots</div>
+            <div class="small">The white arrow is the world qubit. If it shrinks towards the middle, the world is linked to the door.</div>
+          </div>
+        </div>
       </div>
 
   <div id="legend">

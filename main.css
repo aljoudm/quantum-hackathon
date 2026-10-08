@@ -126,3 +126,12 @@ button:disabled { opacity: .45; cursor: default; }
   #layout, .no-guide #layout, .no-ref #layout { grid-template-columns: minmax(0, 768px); }
   #center { order: 1; } #guide { order: 2; } #reference { order: 3; }
 }
+
+/* qubit view */
+#wheel-wrap { flex: 1 1 100%; display: flex; gap: 12px; align-items: center; background: #1b1b30; border: 1px solid #33334d; border-radius: 6px; padding: 6px 10px; text-align: left; }
+#wheel { width: 150px; height: 150px; flex: none; margin: 0; }
+#wheel-info { font-size: 12px; line-height: 1.5; }
+#wheel-label { font-weight: bold; margin-bottom: 3px; color: #ffd54f; }
+.lg i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+.lg i.ring { background: transparent; border: 2px solid #fff; }
+.char-icon.ghosted { background: #111; }

@@ -1,6 +1,6 @@
 // Game controller: state, input handling, quantum wiring, game loop.
 import { LEVELS } from './levels.js';
-import { parseLevel, tileAt, canEnter, nearDoor, deriveVisuals, CHARACTERS } from './world.js';
+import { parseLevel, tileAt, canEnter, nearDoor, deriveVisuals, blochVector, CHARACTERS } from './world.js';
 import { createRenderer } from './render.js';
 import { createHud } from './hud.js';
 import { createInput } from './input.js';
@@ -113,7 +113,8 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     S.amps = await quantum.getState(S.seq);
     S.vis = deriveVisuals(S.amps);
     hud.setDoor(S.vis.door);
-    hud.setWheel(S.vis.slot);
+    hud.setWheel(S.vis.slot, blochVector(S.amps));
+    hud.setGhost(S.vis.world === 'ghost');
     hud.setBar(S.bar);
     updateNow();
     emit('world:' + S.vis.world);

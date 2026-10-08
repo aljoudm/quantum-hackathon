@@ -37,6 +37,13 @@ export function createHud(doc, handlers = {}) {
     icons[k] = box;
   }
 
+  function drawIcon(k, tint) {
+    const g = icons[k].querySelector('canvas').getContext('2d');
+    g.clearRect(0, 0, 48, 48);
+    drawSprite(g, k, 0, 0, 3, 0, false, 1, tint);
+  }
+  function setGhost(on) { drawIcon('H', on ? 'black' : null); icons.H.classList.toggle('ghosted', on); }
+
   let toastTimer = 0;
   let flashTimer = 0;
 
@@ -59,27 +66,72 @@ export function createHud(doc, handlers = {}) {
     el.door.textContent = 'Door: ' + (state === 'flicker' ? 'linked…' : state);
     el.door.dataset.state = state;
   }
-  function setWheel(slot) {
+  // Qubit view: a slightly 3D Bloch-style sphere. North pole = state 0 (Day),
+  // south pole = state 1 (Night), the equator = superposition (Ghost Mode).
+  const DAY_C = '#ffd54f';
+  const NIGHT_C = '#5c6bc0';
+  function setWheel(slot, b = { x: 0, y: 0, z: 1 }) {
     const g = el.wheel.getContext('2d');
-    const c = 36;
-    g.clearRect(0, 0, 72, 72);
-    const dirs = [-Math.PI / 2, 0, Math.PI / 2, Math.PI];
-    for (let i = 0; i < 4; i++) {
+    const W = el.wheel.width;
+    const cx = W / 2, cy = W / 2 + 2, R = W * 0.34;
+    const A = -0.55, TILT = 0.45;
+    const proj = (x, y, z) => {
+      const xr = x * Math.cos(A) - y * Math.sin(A);
+      const yr = x * Math.sin(A) + y * Math.cos(A);
+      return { sx: cx + R * xr, sy: cy - R * (yr * Math.sin(TILT) + z * Math.cos(TILT)), front: yr * Math.cos(TILT) - z * Math.sin(TILT) < 0 };
+    };
+    g.clearRect(0, 0, W, W);
+    // sphere body with shading
+    const grad = g.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
+    grad.addColorStop(0, '#6a70b8'); grad.addColorStop(1, '#15163a');
+    g.fillStyle = grad; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1; g.stroke();
+    // equator ring: back half dashed, front half solid
+    const ring = (front) => {
       g.beginPath();
-      g.moveTo(c, c);
-      g.arc(c, c, 32, dirs[i] - Math.PI / 4, dirs[i] + Math.PI / 4);
-      g.closePath();
-      g.globalAlpha = slot === null ? 0.15 : (i === slot ? 1 : 0.3);
+      let pen = false;
+      for (let i = 0; i <= 64; i++) {
+        const p = proj(Math.cos(i / 64 * 2 * Math.PI), Math.sin(i / 64 * 2 * Math.PI), 0);
+        if (p.front === front) { if (!pen) { g.moveTo(p.sx, p.sy); pen = true; } else g.lineTo(p.sx, p.sy); } else pen = false;
+      }
+      g.stroke();
+    };
+    g.lineWidth = 2;
+    g.setLineDash([3, 3]); g.strokeStyle = 'rgba(255,255,255,.35)'; ring(false); g.setLineDash([]);
+    // vertical axis
+    const n = proj(0, 0, 1), so = proj(0, 0, -1);
+    g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(n.sx, n.sy); g.lineTo(so.sx, so.sy); g.stroke();
+    // state arrow (shorter when the world is linked to the door)
+    const len = Math.min(1, Math.hypot(b.x, b.y, b.z));
+    const tip = proj(b.x, b.y, b.z);
+    g.strokeStyle = '#ffffff'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(tip.sx, tip.sy); g.stroke();
+    g.fillStyle = slot === null ? (b.z > 0 ? DAY_C : b.z < 0 ? NIGHT_C : '#fff') : '#ffffff';
+    if (len < 0.05) g.fillStyle = '#ffffff';
+    g.beginPath(); g.arc(tip.sx, tip.sy, 5, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#000'; g.lineWidth = 1; g.stroke();
+    // front half of the ring
+    g.lineWidth = 2; g.strokeStyle = 'rgba(255,255,255,.85)'; ring(true);
+    // phase slots on the ring
+    for (let i = 0; i < 4; i++) {
+      const p = proj(Math.cos(i * Math.PI / 2), Math.sin(i * Math.PI / 2), 0);
+      const on = slot === i;
+      g.globalAlpha = p.front || on ? 1 : 0.55;
       g.fillStyle = SLOT_COLORS[i];
-      g.fill();
+      g.beginPath(); g.arc(p.sx, p.sy, on ? 7 : 5, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = on ? '#fff' : '#000'; g.lineWidth = on ? 2 : 1; g.stroke();
+      g.globalAlpha = 1;
+      g.fillStyle = '#000'; g.font = 'bold 8px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(String(i), p.sx, p.sy + 0.5);
     }
-    g.globalAlpha = 1;
-    if (slot !== null) {
-      g.strokeStyle = '#fff'; g.lineWidth = 3;
-      g.beginPath(); g.moveTo(c, c); g.lineTo(c + Math.cos(dirs[slot]) * 28, c + Math.sin(dirs[slot]) * 28); g.stroke();
-    }
-    g.fillStyle = '#fff'; g.beginPath(); g.arc(c, c, 4, 0, Math.PI * 2); g.fill();
-    el.wheelLabel.textContent = slot === null ? 'Colour wheel (ghost only)' : 'Ghost colour';
+    // poles
+    g.font = 'bold 10px monospace'; g.textAlign = 'center';
+    g.fillStyle = DAY_C; g.beginPath(); g.arc(n.sx, n.sy, 5, 0, Math.PI * 2); g.fill();
+    g.fillText('0 Day', n.sx, n.sy - 13);
+    g.fillStyle = NIGHT_C; g.beginPath(); g.arc(so.sx, so.sy, 5, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#c5cae9'; g.fillText('1 Night', so.sx, so.sy + 13);
+    el.wheelLabel.textContent = slot === null ? 'Qubit view: the world is a definite state (arrow at a pole).' : 'Qubit view: ghost! The arrow is on the equator.';
   }
   function setHint(html, mode) {
     el.hint.innerHTML = html || '';
@@ -143,5 +195,5 @@ export function createHud(doc, handlers = {}) {
   function setFocusOverlay(visible) { el.focus.hidden = !visible; }
 
   return { setChars, shake, setBar, setDoor, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
-    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, toggleMenu, closeMenu, setNow, setMission, setStars, setLevel, setFocusOverlay, elements: el };
+    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, setGhost, toggleMenu, closeMenu, setNow, setMission, setStars, setLevel, setFocusOverlay, elements: el };
 }

@@ -42,7 +42,10 @@ const SPRITES = {
 };
 
 // Same 2-frame walk cycle for everyone: bob and swap feet.
-export function drawSprite(ctx, key, x, y, scale = U, frame = 0, flip = false, alpha = 1) {
+const BLACK = { '#fafafa': '#161616', '#ffffff': '#161616', '#cfd8dc': '#2e2e2e', '#111111': '#ffffff' };
+const tintColor = (c, tint) => (tint === 'black' ? (BLACK[c] || c) : tint === 'outline' ? '#ffffff' : c);
+
+export function drawSprite(ctx, key, x, y, scale = U, frame = 0, flip = false, alpha = 1, tint = null) {
   const sp = SPRITES[key] || SPRITES.none;
   ctx.save();
   ctx.globalAlpha *= alpha;
@@ -52,8 +55,8 @@ export function drawSprite(ctx, key, x, y, scale = U, frame = 0, flip = false, a
   const bob = frame % 2 ? -1 : 0;
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(3, 14, 10, 1);
-  for (const [rx, ry, rw, rh, c] of sp.body) { ctx.fillStyle = c; ctx.fillRect(rx, ry + bob, rw, rh); }
-  ctx.fillStyle = sp.feet;
+  for (const [rx, ry, rw, rh, c] of sp.body) { ctx.fillStyle = tintColor(c, tint); ctx.fillRect(rx, ry + bob, rw, rh); }
+  ctx.fillStyle = tint === 'outline' ? '#ffffff' : sp.feet;
   if (frame % 2) { ctx.fillRect(5, 13, 2, 2); ctx.fillRect(9, 13, 2, 1); }
   else { ctx.fillRect(5, 13, 2, 1); ctx.fillRect(9, 13, 2, 2); }
   ctx.restore();
@@ -188,7 +191,11 @@ export function createRenderer(canvas) {
     const px = (ox + S.vx) * T;
     const py = (oy + S.vy) * T;
     const frame = S.moving ? S.walkFrame : 0;
-    if (vis.world === 'ghost') {
+    if (vis.world === 'ghost' && S.active === 'H') {
+      // Ghost Mode: the goose turns black (with a pale rim so it stays visible)
+      for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) drawSprite(ctx, 'H', px + dx * U, py + dy * U, U, frame, S.facing < 0, 0.55, 'outline');
+      drawSprite(ctx, 'H', px, py, U, frame, S.facing < 0, 1, 'black');
+    } else if (vis.world === 'ghost') {
       const w = Math.sin(t / 180);
       drawSprite(ctx, S.active || 'none', px + w * 2, py, U, frame, S.facing < 0, 0.45);
       drawSprite(ctx, S.active || 'none', px - w * 2, py, U, frame, S.facing < 0, 0.45);

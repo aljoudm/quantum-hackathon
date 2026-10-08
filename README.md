@@ -9,7 +9,7 @@ Built for the Qollab x IonQ hackathon. License: MIT.
 
 The maze exists twice, as a **Day** and a **Night** version. The world is qubit 0, and a **magic door** is qubit 1.
 Pick a character, use its skill, and get to the star. Bridges only exist in one world, ghost gates only open for a ghost,
-and the Eye forces the world to choose. Ten short levels each teach one idea, then show a concept card with the real term.
+and the Eye forces the world to choose. Twenty levels each teach one idea, then show an explanation card: what happened, the concept and its real term, and why it is useful.
 Click the game once to give it keyboard focus.
 
 ## Controls
@@ -20,9 +20,24 @@ Click the game once to give it keyboard focus.
 | X / H / S / Z / C | Switch to Owl / Goose / Lizard / Octopus / Cat |
 | Space | Use the active character's skill |
 | Q | Hint (hint levels only; press again for a stronger hint) |
+| Esc | Menu: resume, retry, levels, settings, how to play |
 | R | Restart level |
 | N | Open or close the notebook of combos you found |
 | Enter | Confirm, next level, close a card |
+
+## Stars, levels and progress
+
+- Every level hides 3 stars in the maze. Collect at least 2 to unlock the finish tile and, with it, the next level. The last level has 5 stars and needs all 5.
+- The menu has Start/Continue, Levels (replay any cleared level), Settings and How to play. The top bar always has a Restart level button and a Settings menu.
+- Levels 1-10 teach one idea each. After level 10 the difficulty rises every 3 levels: 11-13 longer mazes with several elements, 14-16 three-corridor mazes with repeated Eyes and doors, 17-19 forks and everything combined, and 20 is the finale.
+- Progress is kept in memory only (Qollab projects have no persistent storage), so it resets when the page reloads.
+
+## Screen layout
+
+- Left: the guide. Mission (what to do and why), "Right now" one-line explanations that stay until the state changes (selected character, Day/Night/Ghost Mode, ghost colour, door), and the step-by-step instructions or hints.
+- Right: a maze cheat sheet for bridges, ghost gates, the Eye, the magic door, stars and the finish: colours, what each is, how to reach it, and when to use the Eye.
+- Under the maze: the characters (click one, or its info button, to learn who it is and what its gate does in quantum computing), the combo bar and the qubit view.
+- The qubit view is a small Bloch sphere: top pole = state 0 = Day, bottom pole = state 1 = Night, ring = superposition (the Ghost), ring dots = the four ghost colours (phase slots). In Ghost Mode the Goose turns black.
 
 ## Characters and gates
 
@@ -71,9 +86,10 @@ Local simulators allow unlimited jobs.
 
 - `dev.html` (not uploaded to Qollab) runs the game with the JS simulator only: `python3 -m http.server`, then open `/dev.html?level=3`.
 - `node tests/combos.test.mjs` checks the combo table against `qsim.js`; `python tests/test_core.py` checks it against `core.py` (needs `qiskit`).
-- `node tests/levels.test.mjs` solves every level headlessly and checks the intended characters are required.
+- `node tests/levels.test.mjs` solves every level headlessly: all stars plus the finish must be reachable in one run, the intended characters must be required, and no reachable state may be a soft-lock.
+- `node tests/progress.e2e.mjs` checks the star gate and level unlocking through the menus.
 - `node tests/adapter.test.mjs` checks the Qiskit-to-qsim fallbacks (including the IonQ one-job limit); `dev.html?mock=1` exercises them in the browser.
-- `node tests/e2e.mjs` plays all 10 levels in headless Chromium (needs Playwright).
+- `node tests/e2e.mjs` plays all 20 levels in headless Chromium with a solver-driven bot that collects every star (needs Playwright).
 
 ## Tools used
 

@@ -62,3 +62,16 @@ export function deriveVisuals(amps) {
   const door = pOpen < 0.01 ? 'closed' : pOpen > 0.99 ? 'open' : 'flicker';
   return { world, door, pNight, pOpen, slot: world === 'ghost' ? phaseSlot(amps) : null };
 }
+
+// Bloch vector of qubit 0 (the world), from its reduced density matrix.
+// z = +1 is Day (|0>), z = -1 is Night (|1>); x, y carry the phase of a ghost.
+// A qubit entangled with the door has a shorter vector.
+export function blochVector(amps) {
+  const [a0, a1, a2, a3] = amps;
+  const rho00 = prob(a0) + prob(a2);
+  const rho11 = prob(a1) + prob(a3);
+  // rho01 = a0*conj(a1) + a2*conj(a3)
+  const re = a0[0] * a1[0] + a0[1] * a1[1] + a2[0] * a3[0] + a2[1] * a3[1];
+  const im = a0[1] * a1[0] - a0[0] * a1[1] + a2[1] * a3[0] - a2[0] * a3[1];
+  return { x: 2 * re, y: -2 * im, z: rho00 - rho11 };
+}
