@@ -6,7 +6,7 @@ import { COMBOS } from './combos.js';
 export function createHud(doc, handlers = {}) {
   const $ = (id) => doc.getElementById(id);
   const el = {
-    level: $('level-name'), door: $('door-status'), nbCount: $('notebook-count'), chars: $('chars'),
+    level: $('level-name'), nbCount: $('achievements-count'), chars: $('chars'),
     bar: $('combo-bar'), wheel: $('wheel'), wheelLabel: $('wheel-label'), hint: $('hint-box'),
     card: $('card'), info: $('char-panel'), notebook: $('notebook'), flash: $('combo-flash'), toast: $('toast'), focus: $('focus-overlay'),
     canvas: $('game'),
@@ -61,10 +61,6 @@ export function createHud(doc, handlers = {}) {
   }
   function setBar(tokens) {
     el.bar.textContent = tokens.length ? tokens.map((t) => (t === 'EYE' ? '👁' : t)).join(' → ') : '—';
-  }
-  function setDoor(state) {
-    el.door.textContent = 'Door: ' + (state === 'flicker' ? 'linked…' : state);
-    el.door.dataset.state = state;
   }
   // Qubit view: a slightly 3D Bloch-style sphere. North pole = state 0 (Day),
   // south pole = state 1 (Night), the equator = superposition (Ghost Mode).
@@ -156,7 +152,7 @@ export function createHud(doc, handlers = {}) {
     clearTimeout(flashTimer);
     flashTimer = setTimeout(() => el.flash.classList.remove('show'), 1800);
   }
-  function setNotebookCount(n) { el.nbCount.textContent = `Notebook ${n}/${COMBOS.length} · N`; }
+  function setNotebookCount(n) { el.nbCount.textContent = `Achievements ${n}/${COMBOS.length} · N`; }
   function showCard(html) { el.card.innerHTML = html; el.card.hidden = false; }
   function hideCard() { el.card.hidden = true; }
   function showNotebook(entries) {
@@ -166,14 +162,12 @@ export function createHud(doc, handlers = {}) {
         ? `<li><b>${c.name}</b> <code>${c.seq.map((t) => (t === 'EYE' ? 'Eye' : t)).join(' ')}</code><br><span>${c.result}</span></li>`
         : `<li class="locked"><b>???</b></li>`;
     }).join('');
-    el.notebook.innerHTML = `<h2>Notebook</h2><ul>${rows}</ul><p class="small">Press N to close</p>`;
+    el.notebook.innerHTML = `<h2>Achievements</h2><ul>${rows}</ul><p class="small">Press N to close</p>`;
     el.notebook.hidden = false;
   }
   function showInfo(html) { el.info.innerHTML = html; el.info.hidden = false; }
   function hideInfo() { el.info.hidden = true; }
   function hideNotebook() { el.notebook.hidden = true; }
-  function toggleMenu() { doc.getElementById('settings-menu').hidden = !doc.getElementById('settings-menu').hidden; }
-  function closeMenu() { doc.getElementById('settings-menu').hidden = true; }
   function setNow(lines) {
     for (const [k, text] of Object.entries(lines)) {
       const node = $('now-' + k);
@@ -186,14 +180,25 @@ export function createHud(doc, handlers = {}) {
     }
   }
   function setMission(goal, why) { $('mission-goal').textContent = goal; $('mission-why').textContent = why || ''; }
+  let lastStarCount = 0;
   function setStars(got, total, need) {
-    const el2 = $('star-count');
-    el2.textContent = `★ ${got}/${total} · need ${need}`;
-    el2.classList.toggle('ok', got >= need);
+    const strip = $('star-strip');
+    strip.innerHTML = '';
+    for (let i = 0; i < total; i++) {
+      const sp = doc.createElement('span');
+      sp.className = 'st' + (i < got ? ' got' : '') + (i < got && i >= lastStarCount && got > lastStarCount ? ' pop' : '');
+      sp.textContent = i < got ? '★' : '☆';
+      strip.append(sp);
+    }
+    const n = doc.createElement('span');
+    n.className = 'need';
+    n.textContent = got >= need ? 'finish unlocked' : `need ${need}`;
+    strip.append(n);
+    lastStarCount = got;
   }
   function setLevel(i, n, name) { el.level.textContent = `Level ${i} of ${n}: ${name}`; }
   function setFocusOverlay(visible) { el.focus.hidden = !visible; }
 
-  return { setChars, shake, setBar, setDoor, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
-    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, setGhost, toggleMenu, closeMenu, setNow, setMission, setStars, setLevel, setFocusOverlay, elements: el };
+  return { setChars, shake, setBar, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
+    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, setGhost, setNow, setMission, setStars, setLevel, setFocusOverlay, elements: el };
 }

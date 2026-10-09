@@ -1,13 +1,10 @@
 :root { color-scheme: dark; }
-#app { max-width: 1320px; margin: 0 auto; padding: 12px 16px 24px; font-family: ui-monospace, Menlo, Consolas, monospace; color: #e8e8f2; background: #12121f; }
-#topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 2px 10px; font-size: 14px; }
+#app { position: fixed; inset: 0; box-sizing: border-box; padding: 6px 10px; font-family: ui-monospace, Menlo, Consolas, monospace; color: #e8e8f2; background: #12121f; }
+#topbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; }
 #level-name { font-weight: bold; font-size: 16px; }
-#door-status { padding: 2px 8px; border: 1px solid #555; border-radius: 4px; }
-#door-status[data-state="open"] { border-color: #b388ff; color: #d1b3ff; }
-#door-status[data-state="flicker"] { border-color: #ffd54f; color: #ffd54f; }
-#notebook-count { opacity: .8; }
-#stage { position: relative; width: 100%; max-width: 768px; margin: 0 auto; }
-#game { display: block; width: 100%; height: auto; aspect-ratio: 768 / 480; image-rendering: pixelated; background: #000; border: 3px solid #2a2a45; border-radius: 4px; outline: none; }
+#achievements-count { opacity: .8; white-space: nowrap; }
+#stage { position: relative; flex: none; }
+#game { display: block; width: 100%; height: 100%; image-rendering: pixelated; background: #000; border: 3px solid #2a2a45; border-radius: 4px; outline: none; }
 #game:focus { border-color: #8f7be8; }
 [hidden] { display: none !important; }
 #focus-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: rgba(10,10,25,.82); cursor: pointer; text-align: center; padding: 16px; }
@@ -85,8 +82,6 @@ button:disabled { opacity: .45; cursor: default; }
 .screen-inner.howto h2 { font-size: 16px; color: #ffd54f; margin: 14px 0 4px; }
 .screen-inner.howto p, .screen-inner.howto li { font-size: 14px; line-height: 1.4; margin: 4px 0; }
 @media (max-width: 600px) { .lv-grid { grid-template-columns: repeat(3, 1fr); } }
-#star-count { padding: 2px 8px; border: 1px solid #55557a; border-radius: 4px; color: #ffd54f; }
-#star-count.ok { border-color: #9ccc65; color: #c5e1a5; }
 .panel h3 { margin: 10px 0 2px; font-size: 13px; color: #ffd54f; text-transform: uppercase; letter-spacing: .5px; }
 .panel p { margin: 4px 0; font-size: 14px; line-height: 1.4; }
 .panel .row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
@@ -94,38 +89,6 @@ button:disabled { opacity: .45; cursor: default; }
 .char-info { display: block; margin: 3px auto 0; padding: 0 4px; font-size: 10px; line-height: 14px; background: #2a2a48; }
 .char-icon { cursor: pointer; width: 66px; }
 #char-panel code { background: #0b0b18; padding: 1px 5px; border-radius: 3px; }
-
-/* three-column layout: guide | game | reference board */
-#layout { display: grid; grid-template-columns: 250px minmax(0, 768px) 250px; gap: 14px; justify-content: center; align-items: start; }
-#center { min-width: 0; }
-#guide, #reference { font-size: 13px; line-height: 1.4; }
-#guide section { background: #1b1b30; border: 1px solid #33334d; border-radius: 6px; padding: 8px 10px; margin-bottom: 10px; }
-#guide h2, #board h2 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: #ffd54f; }
-#guide p { margin: 4px 0; }
-.now-line { padding: 5px 6px; margin: 4px 0; background: #12122a; border-left: 3px solid #8f7be8; border-radius: 3px; }
-.now-line:empty { display: none; }
-#now-event { border-left-color: #ffd54f; }
-.now-line.changed { animation: nowflash .9s ease-out; }
-@keyframes nowflash { from { background: #3a3a70; } to { background: #12122a; } }
-.calm .now-line.changed, .calm .shake, .calm #combo-flash.show { animation: none; }
-#guide #hint-box { margin: 0; padding: 0; background: none; border: 0; font-size: 13px; }
-#guide #hint-box:empty::before { content: "No instructions for this level. Press Q for a hint if hints are available."; opacity: .6; }
-#guide #hint-box[hidden] { display: block !important; }
-#reference #board { background: #1b1b30; border: 1px solid #33334d; border-radius: 6px; padding: 8px 10px; }
-#board .entry { padding: 8px 0; border-top: 1px solid #33334d; }
-#board h3 { margin: 0 0 4px; font-size: 14px; }
-#board .swatches { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px; }
-#board .swatches canvas { width: 32px; height: 32px; image-rendering: pixelated; border: 1px solid #000; }
-#board .rows div { margin: 2px 0; }
-#board .rows b { color: #ffd54f; font-weight: normal; }
-.no-guide #guide, .no-ref #reference { display: none; }
-.no-guide #layout { grid-template-columns: minmax(0, 768px) 250px; }
-.no-ref #layout { grid-template-columns: 250px minmax(0, 768px); }
-.no-guide.no-ref #layout { grid-template-columns: minmax(0, 768px); }
-@media (max-width: 1240px) {
-  #layout, .no-guide #layout, .no-ref #layout { grid-template-columns: minmax(0, 768px); }
-  #center { order: 1; } #guide { order: 2; } #reference { order: 3; }
-}
 
 /* qubit view */
 #wheel-wrap { flex: 1 1 100%; display: flex; gap: 12px; align-items: center; background: #1b1b30; border: 1px solid #33334d; border-radius: 6px; padding: 6px 10px; text-align: left; }
@@ -135,3 +98,57 @@ button:disabled { opacity: .45; cursor: default; }
 .lg i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
 .lg i.ring { background: transparent; border: 2px solid #fff; }
 .char-icon.ghosted { background: #111; }
+
+/* fit-to-screen layout: guide on the left, maze largest on the right */
+html, body { margin: 0; height: 100%; overflow: hidden; background: #12121f; }
+#app { display: grid; grid-template-columns: clamp(210px, 21vw, 300px) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 6px 10px; }
+#topbar { grid-column: 1 / 3; }
+#guide { min-height: 0; overflow-y: auto; font-size: clamp(11px, 1.55vh, 13px); line-height: 1.35; scrollbar-width: thin; }
+#guide section { background: #1b1b30; border: 1px solid #33334d; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; }
+#guide h2 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: #ffd54f; }
+#guide p { margin: 3px 0; }
+#btn-restart { width: 100%; margin-bottom: 6px; padding: 6px; }
+.now-line { padding: 4px 6px; margin: 3px 0; background: #12122a; border-left: 3px solid #8f7be8; border-radius: 3px; }
+.now-line:empty { display: none; }
+#now-event { border-left-color: #ffd54f; }
+.now-line.changed { animation: nowflash .9s ease-out; }
+@keyframes nowflash { from { background: #3a3a70; } to { background: #12122a; } }
+.calm .now-line.changed, .calm .shake, .calm #combo-flash.show { animation: none; }
+#guide #hint-box { margin: 0; padding: 0; background: none; border: 0; font-size: inherit; }
+#guide #hint-box:empty::before { content: "No instructions here. Press Q for a hint where hints exist."; opacity: .6; }
+#guide #hint-box[hidden] { display: block !important; }
+.step.done { opacity: .5; } .step.now { font-weight: bold; }
+#right { display: flex; flex-direction: column; min-width: 0; min-height: 0; gap: 6px; }
+#stage-area { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+#panel-row { flex: none; display: flex; gap: 10px; align-items: center; flex-wrap: nowrap; margin: 0; }
+#chars { flex: none; }
+#combo-wrap { flex: 1 1 120px; min-width: 100px; }
+#wheel-wrap { flex: 0 1 auto; max-width: 46%; }
+#wheel { width: 112px; height: 112px; }
+#wheel-info { font-size: 11px; line-height: 1.35; }
+#legend { flex: none; margin: 0; font-size: 11px; }
+.no-guide #app, #app.no-guide { grid-template-columns: minmax(0, 1fr); }
+#app.no-guide #guide { display: none; }
+#app.no-guide #topbar { grid-column: 1; }
+/* stars in the top bar (never over the maze) */
+#star-strip { display: flex; align-items: center; gap: 4px; font-size: 22px; line-height: 1; }
+#star-strip .st { color: #4a4a66; transition: color .2s; }
+#star-strip .st.got { color: #ffd54f; text-shadow: 0 0 6px #ffb300; }
+#star-strip .st.pop { animation: starpop .6s ease-out; }
+#star-strip .need { font-size: 11px; opacity: .8; margin-left: 6px; font-family: inherit; }
+@keyframes starpop { 0% { transform: scale(.3) rotate(-90deg); } 60% { transform: scale(1.5); } 100% { transform: scale(1); } }
+.calm #star-strip .st.pop { animation: none; }
+/* zoom: only the maze (plus the star strip and the zoom button) */
+#app.zoom { grid-template-columns: minmax(0, 1fr); }
+#app.zoom #guide, #app.zoom #panel-row, #app.zoom #legend, #app.zoom #level-name, #app.zoom #achievements-count, #app.zoom #btn-settings { display: none; }
+#app.zoom #topbar { grid-column: 1; justify-content: center; position: relative; }
+#app.zoom #top-buttons { position: absolute; right: 0; top: 0; }
+#app.zoom #panel-row { display: block; }
+#app.zoom #wheel-wrap { display: flex; position: fixed; top: 44px; right: 10px; width: 108px; padding: 3px; z-index: 30; background: rgba(18,18,40,.85); pointer-events: none; }
+#app.zoom #wheel-info { display: none; }
+#app.zoom #wheel { width: 100px; height: 100px; }
+@media (max-width: 760px) { #app { grid-template-columns: minmax(0, 1fr); } #guide { display: none; } }
+#app.zoom #chars, #app.zoom #combo-wrap { display: none; }
+/* scale overlay text with the stage */
+#stage { font-size: calc(13px * max(var(--u, 1), .75)); }
+#toast { font-size: inherit; }

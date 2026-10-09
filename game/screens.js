@@ -35,7 +35,6 @@ export function createScreens(doc, onAction) {
       `<button class="toggle ${ctx.settings[key] ? 'on' : ''}" data-action="toggle" data-value="${key}"><b>${ctx.settings[key] ? 'ON ' : 'OFF'}</b> ${label}<br><span class="small">${hint}</span></button>`;
     return `<h1>Settings</h1><div class="col">` +
       row('guide', 'Guide panel (left)', 'Mission, what is happening now, instructions and hints.') +
-      row('reference', 'Maze reference board (right)', 'Cheat sheet for bridges, gates, eyes and doors.') +
       row('calm', 'Calm effects', 'Turns off screen flashes and shaking.') +
       `</div><div class="row"><button data-action="reset">Reset progress</button><button data-action="back">Back</button></div>`;
   }
@@ -50,7 +49,7 @@ export function createScreens(doc, onAction) {
     settings: settingsHtml,
     howto: (ctx) => ctx.howto + `<div class="row">${ctx.firstRun ? '<button data-action="begin">Let\'s go!</button>' : '<button data-action="back">Back</button>'}</div>`,
     pause: (ctx) => `<h1>Paused</h1><div class="col">` +
-      `<button data-action="resume">Resume</button><button data-action="retry">Retry level</button>` +
+      `<button data-action="resume">Resume</button>` +
       `<button data-action="levels">Levels</button><button data-action="settings">Settings</button>` +
       `<button data-action="howto">How to play</button><button data-action="menu">Main menu</button></div>`,
   };

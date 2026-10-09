@@ -1,67 +1,59 @@
 <div id="app">
-  <div id="topbar">
+  <header id="topbar">
     <div id="level-name">Quantum Gate Maze</div>
-    <div id="star-count" title="Stars collected / total (need this many to finish)">★ 0/3</div>
-    <div id="door-status" data-state="closed">Door: closed</div>
-    <div id="notebook-count">Notebook 0/9 · N</div>
+    <div id="star-strip" title="Stars collected. Collect enough to unlock the finish."></div>
+    <div id="achievements-count">Achievements 0/9 · N</div>
     <div id="top-buttons">
-      <button id="btn-restart" title="Restart this level (R)">↻ Restart level</button>
-      <div id="settings-wrap">
-        <button id="btn-settings" title="Menu (Esc)">⚙ Settings</button>
-        <div id="settings-menu" hidden>
-          <button data-menu="resume">Resume</button>
-          <button data-menu="retry">Retry level</button>
-          <button data-menu="levels">Levels</button>
-          <button data-menu="settings">Settings</button>
-          <button data-menu="howto">How to play</button>
-          <button data-menu="menu">Main menu</button>
-        </div>
-      </div>
+      <button id="btn-zoom" title="Show only the maze (Z key is a character, use this button)">⛶ Zoom</button>
+      <button id="btn-settings" title="Menu (Esc)">⚙ Settings</button>
     </div>
-  </div>
+  </header>
 
-  <div id="layout">
-    <aside id="guide" aria-label="Guide">
-      <section id="mission"><h2>Mission</h2><p id="mission-goal"></p><p id="mission-why" class="small"></p></section>
-      <section id="now"><h2>Right now</h2>
-        <div id="now-char" class="now-line"></div>
-        <div id="now-world" class="now-line"></div>
-        <div id="now-wheel" class="now-line"></div>
-        <div id="now-door" class="now-line"></div>
-        <div id="now-event" class="now-line"></div>
-      </section>
-      <section id="guide-steps"><h2>Guide</h2><div id="hint-box"></div></section>
-    </aside>
+  <aside id="guide" aria-label="Guide">
+    <button id="btn-restart" title="Restart this level (R)">↻ Restart level</button>
+    <section id="mission"><h2>Mission</h2><p id="mission-goal"></p><p id="mission-why" class="small"></p></section>
+    <section id="now"><h2>Right now</h2>
+      <div id="now-char" class="now-line"></div>
+      <div id="now-world" class="now-line"></div>
+      <div id="now-wheel" class="now-line"></div>
+      <div id="now-door" class="now-line"></div>
+      <div id="now-event" class="now-line"></div>
+    </section>
+    <section id="guide-steps"><h2>Guide</h2><div id="hint-box"></div></section>
+  </aside>
 
-    <div id="center">
+  <main id="right">
+    <div id="stage-area">
       <div id="stage">
         <canvas id="game" width="768" height="480" tabindex="0"></canvas>
         <div id="focus-overlay"><div class="big">Click to play</div><div class="small">Arrow keys move · letters pick a character · Space uses its skill</div></div>
         <div id="combo-flash"></div>
+        <div id="tip" hidden></div>
         <div id="screen" class="screen" hidden></div>
         <div id="toast"></div>
         <div id="card" class="panel" hidden></div>
         <div id="notebook" class="panel" hidden></div>
         <div id="char-panel" class="panel" hidden></div>
       </div>
+    </div>
 
-      <div id="panel-row">
-        <div id="chars"></div>
-        <div id="combo-wrap"><div class="label">Gates since the last Eye</div><div id="combo-bar">—</div></div>
-        <div id="wheel-wrap">
-          <canvas id="wheel" width="150" height="150"></canvas>
-          <div id="wheel-info">
-            <div id="wheel-label">Qubit view</div>
-            <div class="lg"><i style="background:#ffd54f"></i> Top pole = state 0 = <b>Day</b></div>
-            <div class="lg"><i style="background:#5c6bc0"></i> Bottom pole = state 1 = <b>Night</b></div>
-            <div class="lg"><i class="ring"></i> Ring (equator) = <b>superposition</b>: the Ghost</div>
-            <div class="lg"><i style="background:#ff7043"></i><i style="background:#26c6da"></i><i style="background:#ba68c8"></i><i style="background:#9ccc65"></i> Ring dots 0 to 3 = <b>ghost colour</b> (phase) slots</div>
-            <div class="small">The white arrow is the world qubit. If it shrinks towards the middle, the world is linked to the door.</div>
-          </div>
+    <div id="panel-row">
+      <div id="chars"></div>
+      <div id="combo-wrap"><div class="label">Gates since the last Eye</div><div id="combo-bar">—</div></div>
+      <div id="wheel-wrap">
+        <canvas id="wheel" width="150" height="150"></canvas>
+        <div id="wheel-info">
+          <div id="wheel-label">Qubit view</div>
+          <div class="lg"><i style="background:#ffd54f"></i> Top pole = state 0 = <b>Day</b></div>
+          <div class="lg"><i style="background:#5c6bc0"></i> Bottom pole = state 1 = <b>Night</b></div>
+          <div class="lg"><i class="ring"></i> Equator = equal mix of 0 and 1: the <b>Ghost</b></div>
+          <div class="lg"><i style="background:#ff7043"></i><i style="background:#26c6da"></i><i style="background:#ba68c8"></i><i style="background:#9ccc65"></i> Ring dots 0 to 3 = <b>ghost colour</b> (relative phase)</div>
+          <div class="small">The arrow is the world qubit. If it shrinks towards the middle, the world is entangled with the door.</div>
         </div>
       </div>
+    </div>
 
-  <div id="legend">
+    <div id="legend">
       <span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd> Move</span>
       <span><kbd>X</kbd> Owl</span>
       <span><kbd>H</kbd> Goose</span>
@@ -71,11 +63,8 @@
       <span><kbd>Space</kbd> Skill</span>
       <span><kbd>Q</kbd> Hint</span>
       <span><kbd>R</kbd> Restart</span>
-      <span><kbd>N</kbd> Notebook</span>
-      <span><kbd>Enter</kbd> Next</span>
+      <span><kbd>N</kbd> Achievements</span>
+      <span><kbd>Esc</kbd> Menu</span>
     </div>
-    </div>
-
-    <aside id="reference" aria-label="Maze reference board"><div id="board"></div></aside>
-  </div>
+  </main>
 </div>

@@ -9,7 +9,6 @@ import { COMBOS, matchCombo, renderCircuit } from './combos.js';
 import * as qsim from './qsim.js';
 import { createScreens } from './screens.js';
 import { HOWTO_HTML, CHAR_INFO, charLine, worldLine, wheelLine, doorLine, changeLine } from './text.js';
-import { createBoard } from './board.js';
 
 export function startGame({ core = null, backend = null, doc = document, startLevel = 0, skipMenu = false, unlockAll = false } = {}) {
   const canvas = doc.getElementById('game');
@@ -18,7 +17,6 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     onSelect: (k) => enqueue({ type: 'select', char: k }),
   });
   const quantum = createQuantum({ core, backend });
-  const board = createBoard(doc);
   const renderer = createRenderer(canvas);
 
   const S = {
@@ -26,7 +24,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     stars: [], starsGot: 0, need: 2, goalLocked: true, active: null, seq: [], history: [], bar: [], amps: qsim.getState([]), vis: deriveVisuals(qsim.getState([])),
     phase: 'screen', screenFrom: 'menu', stack: [], hintTier: -1, stepIdx: 0, notebook: [], snapAt: -1e9,
   };
-  const settings = { guide: true, reference: true, calm: false };
+  const settings = { guide: true, calm: false };
   const progress = { cleared: LEVELS.map(() => false), best: LEVELS.map(() => 0) };
   let firstRun = true;
   const unlocked = (i) => unlockAll || i === 0 || progress.cleared[i] || progress.cleared[i - 1];
@@ -34,7 +32,6 @@ export function startGame({ core = null, backend = null, doc = document, startLe
   const appEl = doc.getElementById('app');
   const applySettings = () => {
     appEl.classList.toggle('no-guide', !settings.guide);
-    appEl.classList.toggle('no-ref', !settings.reference);
     appEl.classList.toggle('calm', settings.calm);
   };
   const screenCtx = () => ({
@@ -47,7 +44,6 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     if (S.phase !== 'screen') { S.screenFrom = S.phase; S.stack = []; }
     else if (push && screens.current) S.stack.push(screens.current);
     S.phase = 'screen';
-    hud.closeMenu();
     screens.show(name, screenCtx());
   }
   function closeScreen() {
@@ -73,7 +69,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
       case 'retry': case 'replay': await loadLevel(S.levelIndex); break;
       case 'level': await loadLevel(Number(v)); break;
       case 'next': await loadLevel(Math.min(S.levelIndex + 1, LEVELS.length - 1)); break;
-      case 'menu': S.screenFrom = S.phase === 'screen' ? S.screenFrom : S.phase; S.phase = 'screen'; S.stack = []; hud.closeMenu(); screens.show('menu', screenCtx()); break;
+      case 'menu': S.screenFrom = S.phase === 'screen' ? S.screenFrom : S.phase; S.phase = 'screen'; S.stack = []; screens.show('menu', screenCtx()); break;
       case 'toggle': settings[v] = !settings[v]; applySettings(); screens.show('settings', screenCtx()); break;
       case 'reset':
         progress.cleared.fill(false); progress.best.fill(0); S.notebook = []; hud.setNotebookCount(0);
@@ -112,7 +108,6 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     const prev = S.vis;
     S.amps = await quantum.getState(S.seq);
     S.vis = deriveVisuals(S.amps);
-    hud.setDoor(S.vis.door);
     hud.setWheel(S.vis.slot, blochVector(S.amps));
     hud.setGhost(S.vis.world === 'ghost');
     hud.setBar(S.bar);
@@ -213,7 +208,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
       `<h3>Why it is useful</h3><p>${lv.card.useful}</p>` +
       `<div class="circuits"><div><div class="small">The idea</div><pre>${lv.card.circuit}</pre></div>` +
       `<div><div class="small">Your circuit</div><pre>${mine}</pre></div></div>` +
-      `<div class="row">${last ? '' : '<button data-action="next">Next level</button>'}<button data-action="replay">Replay</button><button data-action="levels">Levels</button></div>` +
+      `<div class="row">${last ? '' : '<button data-action="next">Next level</button>'}<button data-action="levels">Levels</button></div>` +
       `<p class="small">Enter: ${last ? 'play again' : 'next level'} · R: replay</p>`);
   }
 
@@ -320,25 +315,37 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     if (b) onAction(b.dataset.action, b.dataset.value);
   });
   doc.getElementById('btn-restart').addEventListener('click', () => { queue = queue.then(() => loadLevel(S.levelIndex)); });
-  doc.getElementById('btn-settings').addEventListener('click', () => hud.toggleMenu());
-  doc.getElementById('settings-menu').addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-menu]');
-    if (!b) return;
-    const m = b.dataset.menu;
-    hud.closeMenu();
-    if (m === 'resume') { if (S.phase === 'screen' && screens.current !== 'menu') closeScreen(); return; }
-    if (m === 'retry') { onAction('retry'); return; }
+  doc.getElementById('btn-settings').addEventListener('click', () => {
+    if (S.phase === 'screen') { if (screens.current === 'pause') closeScreen(); else if (screens.current !== 'menu') openScreen('pause', { push: false }); return; }
     if (S.phase === 'notebook') { S.phase = 'play'; hud.hideNotebook(); }
-    if (m === 'menu') onAction('menu'); else openScreen(m, { push: false });
+    openScreen('pause');
   });
 
-  let frames = 0;
+  // fit the stage to the free area (largest 16:10 rectangle), and the zoom button
+  const area = doc.getElementById('stage-area');
+  function fit() {
+    const w = area.clientWidth, h = area.clientHeight;
+    if (!w || !h) return;
+    const ratio = canvas.width / canvas.height;
+    const sw = Math.floor(Math.min(w, h * ratio));
+    stage.style.width = sw + 'px';
+    stage.style.height = Math.floor(sw / ratio) + 'px';
+    stage.style.setProperty('--u', (sw / canvas.width).toFixed(3));
+    if (typeof ResizeObserver === 'undefined') return;
+  }
+  if (typeof ResizeObserver !== 'undefined') new ResizeObserver(fit).observe(area);
+  window.addEventListener('resize', fit);
+  doc.getElementById('btn-zoom').addEventListener('click', () => {
+    appEl.classList.toggle('zoom');
+    fit();
+  });
+  fit();
+
   function frame(t) {
     const k = 0.35;
     S.vx += (S.pos.x - S.vx) * k; S.vy += (S.pos.y - S.vy) * k;
     if (Math.abs(S.pos.x - S.vx) < 0.02 && Math.abs(S.pos.y - S.vy) < 0.02) { S.vx = S.pos.x; S.vy = S.pos.y; S.moving = false; }
     renderer.draw(S, t);
-    if (++frames % 8 === 0) board.redraw(t);
     requestAnimationFrame(frame);
   }
 
