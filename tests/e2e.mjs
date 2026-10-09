@@ -33,20 +33,22 @@ const wait = (ms) => page.waitForTimeout(ms);
 const press = async (k) => { await page.keyboard.press(k); await wait(112); };
 const snapshot = () => page.evaluate(() => {
   const s = window.__game.state;
-  return { phase: s.phase, level: s.levelIndex + 1, x: s.pos.x, y: s.pos.y, seq: [...s.seq], left: s.stars.map((t) => [t.x, t.y]), got: s.starsGot };
+  return { phase: s.phase, level: s.levelIndex + 1, x: s.pos.x, y: s.pos.y, seq: [...s.seq], left: s.stars.map((t) => [t.x, t.y]), got: s.starsGot, ch: s.chasers.map((c) => ({ x: c.x, y: c.y })), t: s.chaseT };
 });
 
 async function playLevel(n) {
   const level = LEVELS[n - 1];
   const grid = parseLevel(level);
-  let replans = 0;
+  let replans = 0, caught = 0, lastGot = 0;
   for (;;) {
     const s = await snapshot();
-    if (s.phase === 'card') return { ok: true, replans, got: s.got };
+    if (s.got < lastGot) caught++;
+    lastGot = s.got;
+    if (s.phase === 'card') return { ok: true, replans, got: s.got, caught };
     if (replans++ > 60) return { ok: false, why: 'too many replans' };
     let mask = 0;
     grid.stars.forEach((st, i) => { if (!s.left.some(([x, y]) => x === st.x && y === st.y)) mask |= 1 << i; });
-    const plan = solve(level, { all: true, from: { x: s.x, y: s.y, mask, amps: qsim.getState(s.seq) } });
+    const plan = solve(level, { all: true, from: { x: s.x, y: s.y, mask, amps: qsim.getState(s.seq), ch: s.ch.length ? s.ch : null, t: s.t } });
     if (!plan) return { ok: false, why: `no plan from ${JSON.stringify(s)}` };
     for (const a of plan.actions) {
       if (a.type === 'use') { await press(a.char.toLowerCase()); await press('Space'); continue; }
@@ -66,7 +68,7 @@ for (let lv = START; lv <= 20; lv++) {
   if (before.level !== lv) { console.log(`FAIL expected level ${lv}, on ${before.level}`); failed = true; break; }
   const r = await playLevel(lv);
   if (!r.ok) { console.log(`FAIL level ${lv}: ${r.why}`); failed = true; break; }
-  console.log(`ok   level ${lv} ${LEVELS[lv - 1].name}: ${r.got} stars, ${r.replans} plan(s)`);
+  console.log(`ok   level ${lv} ${LEVELS[lv - 1].name}: ${r.got} stars, ${r.replans} plan(s)${r.caught ? ', caught ' + r.caught + 'x' : ''}`);
   if (lv === 1 && process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
   await press('Enter');
 }

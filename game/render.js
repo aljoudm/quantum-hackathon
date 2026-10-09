@@ -195,6 +195,20 @@ export function createRenderer(canvas) {
       layerPass(vis.world, ox, oy, S, t, 1);
     }
     S.stars.forEach((st) => drawStar(st.x, st.y, ox, oy, t));
+    S.chasers.forEach((c) => {
+      const cx = (ox + c.vx) * T, cy = (oy + c.vy) * T;
+      const wob = Math.sin(t / 130 + c.x);
+      ctx.save();
+      ctx.translate(cx, cy + wob * 2);
+      ctx.scale(U, U);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#1a0d2e'; ctx.fillRect(3, 3, 10, 10); ctx.fillRect(2, 5, 12, 6); ctx.fillRect(5, 1, 6, 14);
+      ctx.fillStyle = '#4a148c'; ctx.fillRect(4, 4, 8, 8);
+      ctx.fillStyle = '#e040fb'; ctx.fillRect(5, 6, 2, 2); ctx.fillRect(9, 6, 2, 2);
+      ctx.fillStyle = '#000'; ctx.fillRect(6, 7, 1, 1); ctx.fillRect(10, 7, 1, 1);
+      ctx.fillStyle = '#7b1fa2'; ctx.fillRect(3 + (Math.floor(t / 120) % 3), 12, 2, 3); ctx.fillRect(8, 12, 2, 3 - (Math.floor(t / 120) % 2)); ctx.fillRect(11, 12, 2, 3);
+      ctx.restore();
+    });
     const px = (ox + S.vx) * T;
     const py = (oy + S.vy) * T;
     const frame = S.moving ? S.walkFrame : 0;

@@ -1,6 +1,6 @@
 // Game controller: state, input handling, quantum wiring, game loop.
 import { LEVELS } from './levels.js';
-import { parseLevel, tileAt, canEnter, nearDoor, deriveVisuals, blochVector, CHARACTERS } from './world.js';
+import { parseLevel, tileAt, canEnter, nearDoor, deriveVisuals, blochVector, chaserStep, chaseNext, chaserDistance, CHARACTERS } from './world.js';
 import { createRenderer, tileRect } from './render.js';
 import { createHud } from './hud.js';
 import { createInput } from './input.js';
@@ -21,7 +21,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
 
   const S = {
     levelIndex: 0, level: null, grid: null, pos: { x: 1, y: 1 }, vx: 1, vy: 1, facing: 1, moving: false, walkFrame: 0, lastMove: 0,
-    stars: [], starsGot: 0, need: 2, goalLocked: true, active: null, seq: [], history: [], bar: [], amps: qsim.getState([]), vis: deriveVisuals(qsim.getState([])),
+    chasers: [], chaseT: 0, stars: [], starsGot: 0, need: 2, goalLocked: true, active: null, seq: [], history: [], bar: [], amps: qsim.getState([]), vis: deriveVisuals(qsim.getState([])),
     tipTile: null, tipQueue: [], phase: 'screen', screenFrom: 'menu', stack: [], hintTier: -1, stepIdx: 0, notebook: [], snapAt: -1e9,
   };
   const settings = { guide: true, calm: false, tips };
@@ -104,6 +104,15 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     });
   }
   const notice = (text) => hud.setNow({ event: text });
+  function updateNoise() {
+    if (!S.chasers.length) { hud.setNow({ noise: '' }); return; }
+    const { every, delay } = S.grid.chase;
+    const d = Math.min(...S.chasers.map((c) => chaserDistance(S.grid, c, S.pos)));
+    const waking = S.chaseT < delay;
+    hud.setNow({ noise: waking
+      ? `Noise: asleep for ${delay - S.chaseT} more of your steps. Then it moves ${every === 1 ? 'as fast as you' : `once every ${every} of your steps`}.`
+      : `Noise: ${d} step${d === 1 ? '' : 's'} behind you. It moves ${every === 1 ? 'as fast as you' : `once every ${every} of your steps`}. Skills cost no time.` });
+  }
 
   async function refresh() {
     const prev = S.vis;
@@ -113,6 +122,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     hud.setGhost(S.vis.world === 'ghost');
     hud.setBar(S.bar);
     updateNow();
+    updateNoise();
     emit('world:' + S.vis.world);
     if (S.vis.slot !== null) emit('slot:' + S.vis.slot);
     if (S.vis.door === 'open' && prev.door !== 'open') emit('door:open');
@@ -168,6 +178,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     S.vx = S.pos.x; S.vy = S.pos.y;
     S.stars = S.grid.stars.map((st) => ({ ...st })); S.starsGot = 0; S.need = S.grid.need;
     S.goalLocked = S.need > 0;
+    S.chasers = S.grid.chasers.map((c) => ({ ...c, vx: c.x, vy: c.y })); S.chaseT = 0;
     S.seq = []; S.history = []; S.bar = [];
     S.active = S.level.startActive === false ? null : S.level.chars[0];
     S.phase = 'play'; S.hintTier = -1; S.stepIdx = 0;
@@ -267,6 +278,23 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     if (!canEnter(ch, S.vis)) return;
     S.pos = { x: nx, y: ny };
     S.moving = true; S.walkFrame++;
+    if (S.chasers.length) {
+      let caught = S.chasers.some((c) => c.x === nx && c.y === ny);
+      if (!caught) {
+        const { t, step } = chaseNext(S.grid.chase, S.chaseT);
+        S.chaseT = t;
+        if (step) S.chasers.forEach((c) => { const n = chaserStep(S.grid, c, S.pos); c.x = n.x; c.y = n.y; });
+        caught = S.chasers.some((c) => c.x === nx && c.y === ny);
+      }
+      updateNoise();
+      if (caught) {
+        S.snapAt = performance.now();
+        hud.toast('The Noise caught you! Back to the start.', 2400);
+        await loadLevel(S.levelIndex);
+        notice('The Noise caught you and the level restarted. Stay ahead of it: it only moves when you move.');
+        return;
+      }
+    }
     emit('enter:' + ch);
     if (nearDoor(S.grid, nx, ny)) emit('near:door');
     const si = S.stars.findIndex((st) => st.x === nx && st.y === ny);
@@ -413,6 +441,7 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     const k = 0.35;
     S.vx += (S.pos.x - S.vx) * k; S.vy += (S.pos.y - S.vy) * k;
     if (Math.abs(S.pos.x - S.vx) < 0.02 && Math.abs(S.pos.y - S.vy) < 0.02) { S.vx = S.pos.x; S.vy = S.pos.y; S.moving = false; }
+    S.chasers.forEach((c) => { c.vx += (c.x - c.vx) * k; c.vy += (c.y - c.vy) * k; });
     renderer.draw(S, t);
     requestAnimationFrame(frame);
   }

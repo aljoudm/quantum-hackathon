@@ -7,8 +7,10 @@ import { solve, softLocks, neededChars } from './solver.mjs';
 
 const NEEDED = {
   1: ['X'], 2: ['H'], 3: ['H'], 4: ['H', 'S'], 5: ['H', 'S'], 6: ['H', 'Z'], 7: ['H'], 8: ['X', 'C'], 9: ['H', 'C'], 10: ['H', 'S', 'C'],
-  11: ['X'], 12: ['H', 'S'], 13: ['X', 'C'], 14: ['H'], 15: ['H', 'C'], 16: ['H', 'S'], 17: ['X', 'H', 'C'], 18: ['H', 'S', 'C'], 19: ['H', 'C'], 20: ['H', 'S', 'C'],
 };
+// Levels 11-20 give the player every character, so no single one has to be required.
+// Instead the difficulty (fewest actions to collect every star and finish) must rise level after level.
+let lastActions = 0;
 assert.equal(LEVELS.length, 20);
 for (const level of LEVELS) {
   const grid = parseLevel(level);
@@ -23,9 +25,18 @@ for (const level of LEVELS) {
   }
   const all = solve(level, { all: true });
   assert.ok(all, `level ${level.id}: all ${stars} stars + finish must be reachable`);
-  const needed = neededChars(level);
-  assert.deepEqual(needed, NEEDED[level.id], `level ${level.id} needed characters (got ${needed})`);
-  const lock = softLocks(level);
-  console.log(`ok   level ${level.id} ${level.name}: all ${stars} stars + finish in ${all.actions.length} actions; needs ${needed.join('+')}; ${lock.states} states, ${lock.stuck} soft-locked`);
+  const needed = NEEDED[level.id] ? neededChars(level) : [];
+  if (NEEDED[level.id]) assert.deepEqual(needed, NEEDED[level.id], `level ${level.id} needed characters (got ${needed})`);
+  else {
+    assert.deepEqual(level.chars, ['X', 'H', 'S', 'Z', 'C'], `level ${level.id} must offer every character`);
+    assert.equal(level.startActive, false, `level ${level.id}: the player picks the character`);
+    assert.ok(all.actions.length > lastActions, `level ${level.id} (${all.actions.length} actions) must be harder than level ${level.id - 1} (${lastActions})`);
+    lastActions = all.actions.length;
+  }
+  if (level.id === 10) lastActions = 0;
+  if (level.id === 11) lastActions = 0;
+  // chasers do not change the map: check for soft-locks without them
+  const lock = softLocks({ ...level, chasers: [] });
+  console.log(`ok   level ${level.id} ${level.name}: all ${stars} stars + finish in ${all.actions.length} actions; ${needed.length ? 'needs ' + needed.join('+') + '; ' : 'any character; '}${level.chasers ? 'with Noise; ' : ''}${lock.states} states, ${lock.stuck} soft-locked`);
 }
 console.log('level checks passed');
