@@ -1,7 +1,7 @@
 // Section 9 acceptance table checked against game/qsim.js.
 import assert from 'node:assert/strict';
 import * as qsim from '../game/qsim.js';
-import { deriveVisuals } from '../game/world.js';
+import { deriveVisuals, blochVector } from '../game/world.js';
 
 const vis = (seq) => deriveVisuals(qsim.getState(seq));
 const probs = (seq) => qsim.probabilities(qsim.getState(seq)).map((p) => +p.toFixed(6));
@@ -36,5 +36,15 @@ check('Collapse states', () => {
   assert.equal(vis(['X']).world, 'night');
   assert.equal(vis(['XD']).door, 'open');
   assert.equal(vis(['X', 'XD']).world, 'night');
+});
+check('Bloch vector matches the wheel', () => {
+  const near = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} vs ${b}`);
+  const day = blochVector(qsim.getState([]));       near(day.z, 1);
+  const night = blochVector(qsim.getState(['X']));  near(night.z, -1);
+  const plus = blochVector(qsim.getState(['H']));   near(plus.x, 1); near(plus.z, 0);
+  const plusI = blochVector(qsim.getState(['H', 'S'])); near(plusI.y, 1);
+  const minus = blochVector(qsim.getState(['H', 'Z'])); near(minus.x, -1);
+  const bell = blochVector(qsim.getState(['H', 'CNOT']));
+  near(Math.hypot(bell.x, bell.y, bell.z), 0);      // entangled with the door: arrow shrinks to the centre
 });
 console.log(`${n} checks passed`);

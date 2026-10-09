@@ -10,6 +10,7 @@ export function createInput(canvas, onAction) {
     else if (e.key === ' ' || e.code === 'Space') action = { type: 'skill' };
     else if (e.key === 'Enter') action = { type: 'confirm' };
     else if (LETTERS[e.key.toLowerCase()]) action = { type: 'select', char: LETTERS[e.key.toLowerCase()] };
+    else if (e.key === 'Escape') action = { type: 'menu' };
     else if (e.key.toLowerCase() === 'q') action = { type: 'hint' };
     else if (e.key.toLowerCase() === 'r') action = { type: 'restart' };
     else if (e.key.toLowerCase() === 'n') action = { type: 'notebook' };

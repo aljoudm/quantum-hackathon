@@ -7,7 +7,8 @@ import * as qsim from './game/qsim.js';
 const html = await (await fetch('./index.html')).text();
 document.getElementById('app-root').innerHTML = html;
 const params = new URLSearchParams(location.search);
-const level = Number(params.get('level') || 1) - 1;
+const jump = params.get('level');
+const level = Number(jump || 1) - 1;
 
 let core = null;
 let backend = null;
@@ -24,4 +25,4 @@ if (params.get('mock')) {
     }),
   };
 }
-window.__game = startGame({ core, backend, startLevel: level });
+window.__game = startGame({ core, backend, startLevel: level, skipMenu: !!jump, unlockAll: !!params.get('unlock'), tips: !params.get('notips') });

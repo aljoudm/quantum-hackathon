@@ -4,7 +4,8 @@ export const U = T / 16;  // size of one sprite pixel
 export const COLS = 16;
 export const ROWS = 10;
 // Wheel slot colours: slot 0 at the top, then clockwise.
-export const SLOT_COLORS = ['#ffd54f', '#4db6ac', '#ba68c8', '#ff8a65'];
+export const SLOT_COLORS = ['#ff7043', '#26c6da', '#ba68c8', '#9ccc65'];
+export const SLOT_NAMES = ['orange', 'cyan', 'purple', 'green'];
 
 const PAL = {
   day: { a: '#f1e3b3', b: '#e8d6a0', wall: '#8a6d3b', wallD: '#6b5229', voidC: '#8ecae6', voidD: '#6fb1d4', br: '#c08a4a', brD: '#8f6330', eye: '#ffffff', iris: '#2a9d8f', door: '#7b5a3c' },
@@ -41,7 +42,10 @@ const SPRITES = {
 };
 
 // Same 2-frame walk cycle for everyone: bob and swap feet.
-export function drawSprite(ctx, key, x, y, scale = U, frame = 0, flip = false, alpha = 1) {
+const BLACK = { '#fafafa': '#161616', '#ffffff': '#161616', '#cfd8dc': '#2e2e2e', '#111111': '#ffffff' };
+const tintColor = (c, tint) => (tint === 'black' ? (BLACK[c] || c) : tint === 'outline' ? '#ffffff' : c);
+
+export function drawSprite(ctx, key, x, y, scale = U, frame = 0, flip = false, alpha = 1, tint = null) {
   const sp = SPRITES[key] || SPRITES.none;
   ctx.save();
   ctx.globalAlpha *= alpha;
@@ -51,99 +55,125 @@ export function drawSprite(ctx, key, x, y, scale = U, frame = 0, flip = false, a
   const bob = frame % 2 ? -1 : 0;
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.fillRect(3, 14, 10, 1);
-  for (const [rx, ry, rw, rh, c] of sp.body) { ctx.fillStyle = c; ctx.fillRect(rx, ry + bob, rw, rh); }
-  ctx.fillStyle = sp.feet;
+  for (const [rx, ry, rw, rh, c] of sp.body) { ctx.fillStyle = tintColor(c, tint); ctx.fillRect(rx, ry + bob, rw, rh); }
+  ctx.fillStyle = tint === 'outline' ? '#ffffff' : sp.feet;
   if (frame % 2) { ctx.fillRect(5, 13, 2, 2); ctx.fillRect(9, 13, 2, 1); }
   else { ctx.fillRect(5, 13, 2, 1); ctx.fillRect(9, 13, 2, 2); }
   ctx.restore();
 }
 
+export function drawTile(ctx, ch, tx, ty, ox, oy, layer, vis, t, parity) {
+  const p = PAL[layer];
+  ctx.save();
+  ctx.translate((ox + tx) * T, (oy + ty) * T);
+  ctx.scale(U, U);
+  const r = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+  const floor = () => r(0, 0, 16, 16, parity ? p.a : p.b);
+  const water = () => {
+    r(0, 0, 16, 16, p.voidC);
+    const s = Math.floor(t / 400 + tx) % 4;
+    r(2 + s, 4, 5, 1, p.voidD); r(9 - s, 11, 5, 1, p.voidD);
+  };
+  const bridge = () => {
+    water();
+    r(0, 2, 16, 12, p.br);
+    r(0, 5, 16, 1, p.brD); r(0, 9, 16, 1, p.brD); r(0, 13, 16, 1, p.brD);
+    r(0, 2, 16, 1, p.brD);
+  };
+  switch (ch) {
+    case '#':
+      r(0, 0, 16, 16, p.wall);
+      r(0, 5, 16, 1, p.wallD); r(0, 10, 16, 1, p.wallD); r(8, 0, 1, 5, p.wallD); r(4, 5, 1, 5, p.wallD);
+      r(12, 5, 1, 5, p.wallD); r(8, 10, 1, 6, p.wallD); r(0, 0, 16, 1, 'rgba(255,255,255,0.15)');
+      break;
+    case 'D': if (layer === 'day') bridge(); else water(); break;
+    case 'N': if (layer === 'night') bridge(); else water(); break;
+    case '0': case '1': case '2': case '3': case '?': {
+      floor();
+      const any = ch === '?';
+      const slot = any ? -1 : Number(ch);
+      const col = any ? '#ffffff' : SLOT_COLORS[slot];
+      const open = vis.world === 'ghost' && (any || vis.slot === slot);
+      r(1, 2, 2, 12, col); r(13, 2, 2, 12, col);
+      if (open) {
+        ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t / 250);
+        r(1, 1, 14, 2, col);
+      } else {
+        ctx.globalAlpha = 0.85;
+        r(5, 3, 1, 10, col); r(8, 3, 1, 10, col); r(11, 3, 1, 10, col);
+      }
+      ctx.globalAlpha = 1;
+      // mini wheel: the slot this gate wants is lit
+      const pip = [[7, 5], [10, 7], [7, 9], [4, 7]];
+      pip.forEach(([x, y], i) => r(x, y, 2, 2, any || i === slot ? col : 'rgba(0,0,0,0.35)'));
+      break;
+    }
+    case 'E': {
+      floor();
+      const live = vis.world === 'ghost' || vis.door === 'flicker';
+      r(2, 5, 12, 6, p.eye); r(3, 4, 10, 8, p.eye);
+      r(6, 4, 4, 8, p.iris); r(7, 5, 2, 6, '#111111');
+      r(3, 4, 10, 1, '#111111'); r(3, 11, 10, 1, '#111111');
+      if (!live) { r(2, 4, 12, 4, p.a === PAL.day.a ? '#b9a56b' : '#1f2350'); r(2, 8, 12, 1, '#111111'); }
+      else { ctx.globalAlpha = 0.35 + 0.25 * Math.sin(t / 200); r(1, 3, 14, 10, p.iris); }
+      break;
+    }
+    case 'M': {
+      floor();
+      const state = vis.door === 'flicker' ? (Math.floor(t / 130) % 2 ? 'open' : 'closed') : vis.door;
+      if (state === 'closed') {
+        r(2, 1, 12, 14, p.door); r(2, 5, 12, 1, 'rgba(0,0,0,0.3)'); r(2, 10, 12, 1, 'rgba(0,0,0,0.3)'); r(11, 7, 2, 2, '#ffd54f');
+      } else {
+        r(2, 1, 2, 14, p.door); r(12, 1, 2, 14, p.door); r(2, 1, 12, 2, p.door);
+        ctx.globalAlpha = 0.6; r(4, 3, 8, 12, '#b388ff'); ctx.globalAlpha = 1;
+      }
+      break;
+    }
+    case 'G': {
+      floor();
+      const dy = Math.round(Math.sin(t / 300));
+      if (vis.locked) {
+        r(7, 2, 2, 12, '#8a8a8a'); r(2, 7, 12, 2, '#8a8a8a'); r(5, 5, 6, 6, '#b0b0b0');
+        r(6, 7, 4, 4, '#222'); r(7, 5, 2, 3, '#222');
+      } else {
+        r(7, 2 + dy, 2, 12, '#ffd54f'); r(2, 7 + dy, 12, 2, '#ffd54f'); r(5, 5 + dy, 6, 6, '#fff176');
+      }
+      break;
+    }
+    default: floor();
+  }
+  ctx.restore();
+}
+
+
+// Canvas-pixel rectangle of a map tile (the map is centred on the 16x10 canvas).
+export function tileRect(grid, x, y) {
+  const ox = Math.floor((COLS - grid.w) / 2);
+  const oy = Math.floor((ROWS - grid.h) / 2);
+  return { x: (ox + x) * T, y: (oy + y) * T, w: T, h: T };
+}
+
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
+  const tile = (...a) => drawTile(ctx, ...a);
 
-  function tile(ch, tx, ty, ox, oy, layer, vis, t, parity) {
-    const p = PAL[layer];
+  function drawStar(x, y, ox, oy, t) {
     ctx.save();
-    ctx.translate((ox + tx) * T, (oy + ty) * T);
+    ctx.translate((ox + x) * T, (oy + y) * T + Math.round(Math.sin(t / 250 + x)) * U);
     ctx.scale(U, U);
-    const r = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
-    const floor = () => r(0, 0, 16, 16, parity ? p.a : p.b);
-    const water = () => {
-      r(0, 0, 16, 16, p.voidC);
-      const s = Math.floor(t / 400 + tx) % 4;
-      r(2 + s, 4, 5, 1, p.voidD); r(9 - s, 11, 5, 1, p.voidD);
-    };
-    const bridge = () => {
-      water();
-      r(0, 2, 16, 12, p.br);
-      r(0, 5, 16, 1, p.brD); r(0, 9, 16, 1, p.brD); r(0, 13, 16, 1, p.brD);
-      r(0, 2, 16, 1, p.brD);
-    };
-    switch (ch) {
-      case '#':
-        r(0, 0, 16, 16, p.wall);
-        r(0, 5, 16, 1, p.wallD); r(0, 10, 16, 1, p.wallD); r(8, 0, 1, 5, p.wallD); r(4, 5, 1, 5, p.wallD);
-        r(12, 5, 1, 5, p.wallD); r(8, 10, 1, 6, p.wallD); r(0, 0, 16, 1, 'rgba(255,255,255,0.15)');
-        break;
-      case 'D': if (layer === 'day') bridge(); else water(); break;
-      case 'N': if (layer === 'night') bridge(); else water(); break;
-      case '0': case '1': case '2': case '3': case '?': {
-        floor();
-        const any = ch === '?';
-        const slot = any ? -1 : Number(ch);
-        const col = any ? '#ffffff' : SLOT_COLORS[slot];
-        const open = vis.world === 'ghost' && (any || vis.slot === slot);
-        r(1, 2, 2, 12, col); r(13, 2, 2, 12, col);
-        if (open) {
-          ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t / 250);
-          r(1, 1, 14, 2, col);
-        } else {
-          ctx.globalAlpha = 0.85;
-          r(5, 3, 1, 10, col); r(8, 3, 1, 10, col); r(11, 3, 1, 10, col);
-        }
-        ctx.globalAlpha = 1;
-        // mini wheel: the slot this gate wants is lit
-        const pip = [[7, 5], [10, 7], [7, 9], [4, 7]];
-        pip.forEach(([x, y], i) => r(x, y, 2, 2, any || i === slot ? col : 'rgba(0,0,0,0.35)'));
-        break;
-      }
-      case 'E': {
-        floor();
-        const live = vis.world === 'ghost' || vis.door === 'flicker';
-        r(2, 5, 12, 6, p.eye); r(3, 4, 10, 8, p.eye);
-        r(6, 4, 4, 8, p.iris); r(7, 5, 2, 6, '#111111');
-        r(3, 4, 10, 1, '#111111'); r(3, 11, 10, 1, '#111111');
-        if (!live) { r(2, 4, 12, 4, p.a === PAL.day.a ? '#b9a56b' : '#1f2350'); r(2, 8, 12, 1, '#111111'); }
-        else { ctx.globalAlpha = 0.35 + 0.25 * Math.sin(t / 200); r(1, 3, 14, 10, p.iris); }
-        break;
-      }
-      case 'M': {
-        floor();
-        const state = vis.door === 'flicker' ? (Math.floor(t / 130) % 2 ? 'open' : 'closed') : vis.door;
-        if (state === 'closed') {
-          r(2, 1, 12, 14, p.door); r(2, 5, 12, 1, 'rgba(0,0,0,0.3)'); r(2, 10, 12, 1, 'rgba(0,0,0,0.3)'); r(11, 7, 2, 2, '#ffd54f');
-        } else {
-          r(2, 1, 2, 14, p.door); r(12, 1, 2, 14, p.door); r(2, 1, 12, 2, p.door);
-          ctx.globalAlpha = 0.6; r(4, 3, 8, 12, '#b388ff'); ctx.globalAlpha = 1;
-        }
-        break;
-      }
-      case 'G': {
-        floor();
-        const dy = Math.round(Math.sin(t / 300));
-        r(7, 2 + dy, 2, 12, '#ffd54f'); r(2, 7 + dy, 12, 2, '#ffd54f'); r(5, 5 + dy, 6, 6, '#fff176');
-        break;
-      }
-      default: floor();
-    }
+    ctx.fillStyle = '#ffd54f';
+    ctx.fillRect(7, 3, 2, 10); ctx.fillRect(3, 7, 10, 2); ctx.fillRect(5, 5, 6, 6);
+    ctx.fillStyle = '#fff59d'; ctx.fillRect(6, 6, 4, 4);
+    ctx.fillStyle = '#111'; ctx.fillRect(7, 7, 2, 2);
     ctx.restore();
   }
 
   function layerPass(layer, ox, oy, S, t, alpha) {
     ctx.save();
     ctx.globalAlpha = alpha;
-    S.grid.tiles.forEach((row, y) => row.forEach((ch, x) => tile(ch, x, y, ox, oy, layer, S.vis, t, (x + y) % 2)));
+    const v = S.goalLocked ? { ...S.vis, locked: true } : S.vis;
+    S.grid.tiles.forEach((row, y) => row.forEach((ch, x) => tile(ch, x, y, ox, oy, layer, v, t, (x + y) % 2)));
     ctx.restore();
   }
 
@@ -164,15 +194,43 @@ export function createRenderer(canvas) {
     } else {
       layerPass(vis.world, ox, oy, S, t, 1);
     }
+    S.stars.forEach((st) => drawStar(st.x, st.y, ox, oy, t));
+    S.chasers.forEach((c) => {
+      const cx = (ox + c.vx) * T, cy = (oy + c.vy) * T;
+      const wob = Math.sin(t / 130 + c.x);
+      ctx.save();
+      ctx.translate(cx, cy + wob * 2);
+      ctx.scale(U, U);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#1a0d2e'; ctx.fillRect(3, 3, 10, 10); ctx.fillRect(2, 5, 12, 6); ctx.fillRect(5, 1, 6, 14);
+      ctx.fillStyle = '#4a148c'; ctx.fillRect(4, 4, 8, 8);
+      ctx.fillStyle = '#e040fb'; ctx.fillRect(5, 6, 2, 2); ctx.fillRect(9, 6, 2, 2);
+      ctx.fillStyle = '#000'; ctx.fillRect(6, 7, 1, 1); ctx.fillRect(10, 7, 1, 1);
+      ctx.fillStyle = '#7b1fa2'; ctx.fillRect(3 + (Math.floor(t / 120) % 3), 12, 2, 3); ctx.fillRect(8, 12, 2, 3 - (Math.floor(t / 120) % 2)); ctx.fillRect(11, 12, 2, 3);
+      ctx.restore();
+    });
     const px = (ox + S.vx) * T;
     const py = (oy + S.vy) * T;
     const frame = S.moving ? S.walkFrame : 0;
-    if (vis.world === 'ghost') {
+    if (vis.world === 'ghost' && S.active === 'H') {
+      // Ghost Mode: the goose turns black (with a pale rim so it stays visible)
+      for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) drawSprite(ctx, 'H', px + dx * U, py + dy * U, U, frame, S.facing < 0, 0.55, 'outline');
+      drawSprite(ctx, 'H', px, py, U, frame, S.facing < 0, 1, 'black');
+    } else if (vis.world === 'ghost') {
       const w = Math.sin(t / 180);
       drawSprite(ctx, S.active || 'none', px + w * 2, py, U, frame, S.facing < 0, 0.45);
       drawSprite(ctx, S.active || 'none', px - w * 2, py, U, frame, S.facing < 0, 0.45);
     } else {
       drawSprite(ctx, S.active || 'none', px, py, U, frame, S.facing < 0, 1);
+    }
+    if (S.tipTile) {
+      const r = tileRect(S.grid, S.tipTile.x, S.tipTile.y);
+      ctx.save();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t / 150);
+      ctx.strokeRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
+      ctx.restore();
     }
     // snap effect after a measurement
     const age = t - S.snapAt;
@@ -193,4 +251,21 @@ export function createRenderer(canvas) {
   }
 
   return { draw };
+}
+
+// Draw one tile into a small canvas (used by the reference board).
+export function drawSwatch(cv, ch, layer, vis, t = 0) {
+  const g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.save();
+  g.scale(cv.width / T, cv.height / T);
+  if (ch === '*') {
+    drawTile(g, '.', 0, 0, 0, 0, layer, vis, t, 0);
+    g.save(); g.scale(U, U);
+    g.fillStyle = '#ffd54f'; g.fillRect(7, 3, 2, 10); g.fillRect(3, 7, 10, 2); g.fillRect(5, 5, 6, 6);
+    g.fillStyle = '#fff59d'; g.fillRect(6, 6, 4, 4); g.fillStyle = '#111'; g.fillRect(7, 7, 2, 2);
+    g.restore();
+  } else drawTile(g, ch, 0, 0, 0, 0, layer, vis, t, 0);
+  g.restore();
 }

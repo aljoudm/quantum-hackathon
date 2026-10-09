@@ -1,68 +1,42 @@
-// Headless solver: every level must be solvable with its characters, and the
-// intended characters must be required. Measurement is treated optimistically
-// (the player can retry until the wanted outcome).
+// Every level must be solvable, all its stars reachable in a single run, and
+// the intended characters must be required.
 import assert from 'node:assert/strict';
 import { LEVELS } from '../game/levels.js';
-import * as qsim from '../game/qsim.js';
-import { parseLevel, tileAt, canEnter, nearDoor, deriveVisuals, CHARACTERS } from '../game/world.js';
+import { parseLevel, tileAt, canEnter } from '../game/world.js';
+import { solve, softLocks, neededChars } from './solver.mjs';
 
-const key = (amps) => amps.map(([a, b]) => `${a.toFixed(4)},${b.toFixed(4)}`).join('|');
-
-function solve(level, chars) {
-  const grid = parseLevel(level);
-  const start = { x: grid.start.x, y: grid.start.y, seq: [] };
-  const seen = new Set();
-  const queue = [{ ...start, steps: 0 }];
-  const id = (n, amps) => `${n.x},${n.y}:${key(amps)}`;
-  seen.add(id(start, qsim.getState([])));
-  while (queue.length) {
-    const cur = queue.shift();
-    const amps = qsim.getState(cur.seq);
-    const vis = deriveVisuals(amps);
-    const next = [];
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const x = cur.x + dx, y = cur.y + dy, ch = tileAt(grid, x, y);
-      if (!canEnter(ch, vis)) continue;
-      if (ch === 'G') return cur.steps + 1;
-      if (ch === 'E' && (vis.world === 'ghost' || vis.door === 'flicker')) {
-        const p = qsim.probabilities(amps);
-        p.forEach((pi, i) => {
-          if (pi < 1e-9) return;
-          const seq = [];
-          if (i & 1) seq.push('X');
-          if (i & 2) seq.push('XD');
-          next.push({ x, y, seq });
-        });
-      } else next.push({ x, y, seq: cur.seq });
-    }
-    for (const c of chars) {
-      if (c === 'C' && !nearDoor(grid, cur.x, cur.y)) continue;
-      next.push({ x: cur.x, y: cur.y, seq: [...cur.seq, CHARACTERS[c].gate] });
-    }
-    for (const n of next) {
-      const k = id(n, qsim.getState(n.seq));
-      if (seen.has(k)) continue;
-      seen.add(k);
-      queue.push({ ...n, steps: cur.steps + 1 });
-    }
-  }
-  return null;
-}
-
-const NEEDED = { 1: ['X'], 2: ['H'], 3: ['H'], 4: ['H', 'S'], 5: ['H', 'S'], 6: ['H', 'Z'], 7: ['H'], 8: ['X', 'C'], 9: ['H', 'C'], 10: ['H', 'S', 'C'] };
+const NEEDED = {
+  1: ['X'], 2: ['H'], 3: ['H'], 4: ['H', 'S'], 5: ['H', 'S'], 6: ['H', 'Z'], 7: ['H'], 8: ['X', 'C'], 9: ['H', 'C'], 10: ['H', 'S', 'C'],
+};
+// Levels 11-20 give the player every character, so no single one has to be required.
+// Instead the difficulty (fewest actions to collect every star and finish) must rise level after level.
+let lastActions = 0;
+assert.equal(LEVELS.length, 20);
 for (const level of LEVELS) {
-  const solved = solve(level, level.chars);
-  assert.ok(solved, `level ${level.id} must be solvable`);
-  for (const c of NEEDED[level.id]) {
-    const rest = level.chars.filter((x) => x !== c);
-    assert.equal(solve(level, rest), null, `level ${level.id} must not be solvable without ${c}`);
+  const grid = parseLevel(level);
+  assert.ok(level.map.every((r) => r.length === 16), `level ${level.id} rows must be 16 wide`);
+  assert.ok(level.map.length <= 10, `level ${level.id} too tall`);
+  const stars = level.stars.length;
+  assert.equal(stars, level.id === 20 ? 5 : 3, `level ${level.id} star count`);
+  assert.equal(grid.need, level.id === 20 ? 5 : 2, `level ${level.id} stars needed`);
+  for (const s of level.stars) {
+    const ch = tileAt(grid, s.x === undefined ? s[0] : s.x, s.y === undefined ? s[1] : s.y);
+    assert.notEqual(ch, '#', `level ${level.id} star on a wall`);
   }
-  for (const c of 'XHSZC') {
-    if (level.chars.includes(c)) continue;
-    // characters that are not available must not be needed (sanity: solved above)
+  const all = solve(level, { all: true });
+  assert.ok(all, `level ${level.id}: all ${stars} stars + finish must be reachable`);
+  const needed = NEEDED[level.id] ? neededChars(level) : [];
+  if (NEEDED[level.id]) assert.deepEqual(needed, NEEDED[level.id], `level ${level.id} needed characters (got ${needed})`);
+  else {
+    assert.deepEqual(level.chars, ['X', 'H', 'S', 'Z', 'C'], `level ${level.id} must offer every character`);
+    assert.equal(level.startActive, false, `level ${level.id}: the player picks the character`);
+    assert.ok(all.actions.length > lastActions, `level ${level.id} (${all.actions.length} actions) must be harder than level ${level.id - 1} (${lastActions})`);
+    lastActions = all.actions.length;
   }
-  console.log(`ok   level ${level.id} ${level.name}: solvable in ${solved} actions; needs ${NEEDED[level.id].join('+')}`);
+  if (level.id === 10) lastActions = 0;
+  if (level.id === 11) lastActions = 0;
+  // chasers do not change the map: check for soft-locks without them
+  const lock = softLocks({ ...level, chasers: [] });
+  console.log(`ok   level ${level.id} ${level.name}: all ${stars} stars + finish in ${all.actions.length} actions; ${needed.length ? 'needs ' + needed.join('+') + '; ' : 'any character; '}${level.chasers ? 'with Noise; ' : ''}${lock.states} states, ${lock.stuck} soft-locked`);
 }
-// level 7 needs a quarter-turn or half-turn character
-assert.equal(solve(LEVELS[6], ['H']), null);
 console.log('level checks passed');
