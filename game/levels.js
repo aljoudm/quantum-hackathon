@@ -107,9 +107,9 @@ export const LEVELS = [
     why: 'A second H undoes the first: the ghost folds back into a certain Day. Measuring the ghost instead would be a coin toss.',
     steps: [],
     hints: [
-      'Idea: a ghost can fold back into one world. Do it before the Eye makes the choice for you.',
-      'The Goose does both jobs here.',
-      'H, walk through the gate, H again, then step on the Eye.',
+      'Think about using the Goose twice in a row. Can a ghost be undone?',
+      'Look at the stretch between the shimmering gate and the Day bridge. The Eye sits there, and it decides at random if you are still a ghost when you step on it.',
+      'You must be a ghost to pass the gate, but not when you reach the Eye. Undo the ghost in between, and the Eye will have nothing left to decide.',
     ],
     card: {
       text: 'Calling the Goose twice puts the world exactly back. No chance involved: the two ghost paths cancel out.',
@@ -178,9 +178,9 @@ export const LEVELS = [
     why: 'H S S H lands on Night for sure: two quarter turns hide a half turn, and the last H turns that hidden colour into a real change.',
     steps: [],
     hints: [
-      'Idea: two quarter turns make a half turn. Turn the ghost first, then fold it back.',
-      'Goose and Lizard. No Owl needed.',
-      'H, S, S, walk through the gate, then H.',
+      'Night is the opposite of Day, but you have no flip. Still, a ghost\'s hidden colour can turn into a real difference when you fold the ghost back.',
+      'Look at the gate: it wants the ghost colour at slot 2 on the qubit view. The Lizard moves the colour, the Goose makes and folds the ghost.',
+      'Slot 2 is two quarter turns away from where a new ghost starts. Get there before the gate, then fold the ghost back and see which world you land in.',
     ],
     card: {
       text: 'Two quarter turns hide a half turn. Folding the ghost back turns that hidden colour into a real change: Night, for sure.',
@@ -254,9 +254,9 @@ export const LEVELS = [
     why: 'H Z H turns Day into Night, and from Night it turns Night back into Day. The gates ask for the wheel at slot 2 first, then slot 0.',
     steps: [],
     hints: [
-      'Idea: reach Night for the first bridge, then Day again for the second.',
-      'Goose with the Octopus or the Lizard. The gates ask for wheel slot 2, then slot 0.',
-      'H Z, gate, H (Night). Later H Z, gate, H (Day). Two Lizard turns can replace each Z.',
+      'Each bridge needs a different world, and nothing here flips the world directly. Gates can do it: a ghost, a turn of its colour, and a fold back.',
+      'There are two gates: the first asks for colour slot 2, the second for slot 0. The Octopus gives a half turn, the Lizard a quarter. Fold back with the Goose after each gate.',
+      'Before each gate, turn the colour to the slot it asks for. A new ghost starts at slot 0, but a ghost made from Night starts at slot 2, so the second gate needs a different amount of turning.',
     ],
     card: {
       text: 'The same trick works from Night too: a ghost, a half turn, and folding back takes you across to the other world.',
@@ -327,9 +327,9 @@ export const LEVELS = [
     why: 'H then CNOT makes the world and the door share one fate (entanglement): either Night and open, or Day and closed, never mixed.',
     steps: [],
     hints: [
-      'Idea: link the door to the world while the world is a ghost, then let the Eye decide for both.',
-      'Goose first, then the Cat next to the door, then step on the Eye below.',
-      'H, C next to the door, step on the Eye. If it picked Day, try again.',
+      'The door can only open together with the world. Think about linking the two while the world is still a ghost, then forcing a result.',
+      'Stand on the tile next to the door. The Eye in the small alcove below is what forces the result, so the link has to happen before you step on it.',
+      'The Eye gives one of two outcomes: Night with the door open (go through), or Day with the door closed. If you get the second, you have to link again from a fresh ghost.',
     ],
     card: {
       text: 'World and door now share one fate: either Night and open, or Day and closed, never mixed. Looking at one tells you the other.',
