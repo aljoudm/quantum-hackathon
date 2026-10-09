@@ -42,7 +42,7 @@ export const LEVELS = [
     card: {
       text: 'The Owl flips the world between Day and Night. Flip twice and you are back where you started.',
       term: 'This is called the X gate (a quantum NOT)',
-      useful: 'X is how a quantum program sets a qubit to a starting value, just like writing a 1 into a classical bit.',
+      useful: 'X turns a qubit that starts at 0 into a 1, like writing a 1 into a classical bit. Programs use it to prepare inputs.',
       circuit: 'q0: ─X─',
     },
   },
@@ -65,7 +65,7 @@ export const LEVELS = [
     ],
     stars: [[5, 1], [10, 4], [4, 5]],
     goal: 'Make a Night bridge usable with only the Goose and the Eye.',
-    why: 'The Goose (H gate) turns the world into a ghost: Day and Night at once. The Eye measures it and forces a random choice, so you may need a few tries.',
+    why: 'The Goose (H gate) turns the world into a ghost: a superposition of Day and Night. The Eye measures it, which forces one of them at random (50/50 here), so you may need a few tries.',
     steps: [
       'Press H to pick the Goose.',
       'Press Space to turn into a ghost.',
@@ -80,9 +80,9 @@ export const LEVELS = [
     ],
     hints: [],
     card: {
-      text: 'The Goose puts the world in Day and Night at once. The Eye forces it to pick one, and nobody can say which.',
+      text: 'The Goose puts the world in a superposition of Day and Night. The Eye measures it and forces one of them, at random, with 50/50 odds here.',
       term: 'This is called superposition, and the Eye is a measurement',
-      useful: 'Superposition plus measurement is how a quantum computer produces an answer: many possibilities are turned into one result, with odds set by the circuit.',
+      useful: 'A quantum computation prepares a superposition, lets gates reshape its amplitudes, then measures. The result is random, with probabilities set by the circuit.',
       circuit: 'q0: ─H─M─',
     },
   },
@@ -137,11 +137,11 @@ export const LEVELS = [
     ],
     stars: [[5, 1], [10, 4], [3, 5]],
     goal: 'Open the coloured gate by turning the ghost to the matching colour.',
-    why: 'A ghost carries a hidden colour (its phase). The Lizard\'s S gate turns it a quarter. A gate only opens for its own colour.',
+    why: 'A ghost carries a hidden colour: the relative phase between its Day part and its Night part. The Lizard\'s S gate turns it by a quarter (90°). A gate only opens for its own colour.',
     steps: [
       'Press H, then Space: you become a ghost.',
-      'Press S to pick the Lizard, then Space: the colour wheel turns one slot.',
-      'Walk through the gate that matches the wheel.',
+      'Press S to pick the Lizard, then Space: the ghost colour moves one slot on the qubit view.',
+      'Walk through the gate that matches the colour.',
     ],
     stepOn: [
       'skill:H',
@@ -150,7 +150,7 @@ export const LEVELS = [
     ],
     hints: [],
     card: {
-      text: 'A ghost has a hidden colour. The Lizard turns it a quarter. In Day or Night you cannot see it, but a ghost can.',
+      text: 'A ghost has a hidden colour: the relative phase between its two parts. The Lizard turns it a quarter. A definite Day or Night has no relative phase to see.',
       term: 'This is called phase, and this is the S gate',
       useful: 'Phase cannot be read out directly, yet it controls interference. Algorithms such as Grover search and Shor factoring depend on it.',
       circuit: 'q0: ─H─S─',
@@ -175,7 +175,7 @@ export const LEVELS = [
     ],
     stars: [[5, 1], [11, 4], [5, 5]],
     goal: 'Reach Night without the Owl.',
-    why: 'H S S H lands on Night for sure: two quarter turns hide a half turn, and the last H turns that hidden colour into a real change.',
+    why: 'H S S H lands on Night for sure: S S is a half turn (Z), and H Z H equals X, a flip.',
     steps: [],
     hints: [
       'Night is the opposite of Day, but you have no flip. Still, a ghost\'s hidden colour can turn into a real difference when you fold the ghost back.',
@@ -208,7 +208,7 @@ export const LEVELS = [
     ],
     stars: [[5, 1], [11, 4], [3, 5]],
     goal: 'Reach Night using the Octopus instead of the Owl.',
-    why: 'The Octopus (Z gate) flips the ghost\'s colour by half a turn in one move, the same as two Lizard quarters.',
+    why: 'The Octopus (Z gate) turns the ghost\'s colour by half a turn (180°) in one move, the same as two Lizard quarters.',
     steps: [
       'Press H, then Space: you become a ghost.',
       'Press Z to pick the Octopus, then Space: a half turn in one go.',
@@ -334,7 +334,7 @@ export const LEVELS = [
     card: {
       text: 'World and door now share one fate: either Night and open, or Day and closed, never mixed. Looking at one tells you the other.',
       term: 'This is called entanglement',
-      useful: 'Entanglement powers quantum teleportation, quantum key distribution and many algorithm speed-ups.',
+      useful: 'Entanglement is a key resource in quantum teleportation, quantum key distribution and many quantum algorithms.',
       circuit: 'q0: ─H─●─M─\nq1: ───⊕─M─',
     },
   },
@@ -362,7 +362,7 @@ export const LEVELS = [
     ],
     stars: [[3, 2], [10, 4], [8, 7]],
     goal: 'Use everything you know: two quarters, a key and a half turn.',
-    why: 'A real quantum program chains gates: phase tricks to reach Night, a controlled gate to open the door, and a half turn to come back to Day.',
+    why: 'A real quantum program chains gates: phase turns to reach Night, a controlled gate to open the door, and a half turn to come back to Day.',
     steps: [],
     hints: [],
     card: {
@@ -604,7 +604,7 @@ export const LEVELS = [
     card: {
       text: 'Once opened, the door stays open: its qubit keeps its value while you work on the world qubit.',
       term: 'This is called keeping state in a separate qubit',
-      useful: 'A quantum computer can store a result in one qubit while it keeps manipulating others, as long as it avoids disturbing the stored qubit.',
+      useful: 'In an ideal quantum computer a result can sit in one qubit while others keep working. Real hardware has to fight noise to keep it there.',
       circuit: 'q0: ─H─●─M─\nq1: ───⊕─M─',
     },
   },
