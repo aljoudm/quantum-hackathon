@@ -25,4 +25,4 @@ if (params.get('mock')) {
     }),
   };
 }
-window.__game = startGame({ core, backend, startLevel: level, skipMenu: !!jump, unlockAll: !!params.get('unlock') });
+window.__game = startGame({ core, backend, startLevel: level, skipMenu: !!jump, unlockAll: !!params.get('unlock'), tips: !params.get('notips') });

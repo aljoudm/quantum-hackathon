@@ -1,16 +1,16 @@
 // Game controller: state, input handling, quantum wiring, game loop.
 import { LEVELS } from './levels.js';
 import { parseLevel, tileAt, canEnter, nearDoor, deriveVisuals, blochVector, CHARACTERS } from './world.js';
-import { createRenderer } from './render.js';
+import { createRenderer, tileRect } from './render.js';
 import { createHud } from './hud.js';
 import { createInput } from './input.js';
 import { createQuantum } from './quantum.js';
 import { COMBOS, matchCombo, renderCircuit } from './combos.js';
 import * as qsim from './qsim.js';
 import { createScreens } from './screens.js';
-import { HOWTO_HTML, CHAR_INFO, charLine, worldLine, wheelLine, doorLine, changeLine } from './text.js';
+import { HOWTO_HTML, CHAR_INFO, ELEMENTS, elementKey, charLine, worldLine, wheelLine, doorLine, changeLine } from './text.js';
 
-export function startGame({ core = null, backend = null, doc = document, startLevel = 0, skipMenu = false, unlockAll = false } = {}) {
+export function startGame({ core = null, backend = null, doc = document, startLevel = 0, skipMenu = false, unlockAll = false, tips = true } = {}) {
   const canvas = doc.getElementById('game');
   const hud = createHud(doc, {
     onInfo: (k) => enqueue({ type: 'info', char: k }),
@@ -22,9 +22,10 @@ export function startGame({ core = null, backend = null, doc = document, startLe
   const S = {
     levelIndex: 0, level: null, grid: null, pos: { x: 1, y: 1 }, vx: 1, vy: 1, facing: 1, moving: false, walkFrame: 0, lastMove: 0,
     stars: [], starsGot: 0, need: 2, goalLocked: true, active: null, seq: [], history: [], bar: [], amps: qsim.getState([]), vis: deriveVisuals(qsim.getState([])),
-    phase: 'screen', screenFrom: 'menu', stack: [], hintTier: -1, stepIdx: 0, notebook: [], snapAt: -1e9,
+    tipTile: null, tipQueue: [], phase: 'screen', screenFrom: 'menu', stack: [], hintTier: -1, stepIdx: 0, notebook: [], snapAt: -1e9,
   };
-  const settings = { guide: true, calm: false };
+  const settings = { guide: true, calm: false, tips };
+  const seenTips = new Set();
   const progress = { cleared: LEVELS.map(() => false), best: LEVELS.map(() => 0) };
   let firstRun = true;
   const unlocked = (i) => unlockAll || i === 0 || progress.cleared[i] || progress.cleared[i - 1];
@@ -117,6 +118,48 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     if (S.vis.door === 'open' && prev.door !== 'open') emit('door:open');
   }
 
+  // ---- element explanations ----
+  function findElement(key) {
+    // nearest instance of an element type to the start tile, as {x, y}
+    const g = S.grid, st = g.start;
+    let best = null;
+    const consider = (x, y) => { const d = Math.abs(x - st.x) + Math.abs(y - st.y); if (!best || d < best.d) best = { x, y, d }; };
+    if (key === 'star') S.stars.forEach((q) => consider(q.x, q.y));
+    else if (key === 'chaser') (S.chasers || []).forEach((c) => consider(c.x, c.y));
+    else g.tiles.forEach((row, y) => row.forEach((ch, x) => { if (elementKey(ch) === key) consider(x, y); }));
+    return best;
+  }
+  function elementsInLevel() {
+    const keys = new Set();
+    S.grid.tiles.forEach((row) => row.forEach((ch) => { const k = elementKey(ch); if (k) keys.add(k); }));
+    if (S.stars.length) keys.add('star');
+    if (S.chasers && S.chasers.length) keys.add('chaser');
+    const order = ['bridgeDay', 'bridgeNight', 'gate', 'eye', 'door', 'chaser', 'star', 'finish'];
+    return order.filter((k) => keys.has(k));
+  }
+  function showTipFor(key) {
+    const where = findElement(key);
+    const e = ELEMENTS[key];
+    if (!where || !e) return false;
+    seenTips.add(key);
+    S.tipTile = { x: where.x, y: where.y };
+    const r = tileRect(S.grid, where.x, where.y);
+    const k = stage.clientWidth / canvas.width;
+    hud.showTip(`<h3>${e.title}</h3><p>${e.what}</p><p class="q"><b>In quantum computing:</b> ${e.quantum}</p>` +
+      `<p class="small">Enter: ${S.tipQueue.length ? 'next' : 'close'}${S.tipQueue.length ? ' · Esc: skip' : ''}</p>`,
+      { x: r.x * k, y: r.y * k, w: r.w * k, h: r.h * k });
+    return true;
+  }
+  function nextTip() {
+    while (S.tipQueue.length) {
+      const key = S.tipQueue.shift();
+      if (showTipFor(key)) { S.phase = 'tip'; return; }
+    }
+    S.tipTile = null; hud.hideTip();
+    if (S.phase === 'tip') S.phase = 'play';
+  }
+  function closeTips() { S.tipQueue = []; S.tipTile = null; hud.hideTip(); if (S.phase === 'tip') S.phase = 'play'; }
+
   async function loadLevel(i) {
     S.levelIndex = i;
     S.level = LEVELS[i];
@@ -140,6 +183,8 @@ export function startGame({ core = null, backend = null, doc = document, startLe
     showSteps();
     await refresh();
     if (S.level.guidance === 'full' && S.active) emit('select:' + S.active);
+    closeTips();
+    if (settings.tips) { S.tipQueue = elementsInLevel().filter((k) => !seenTips.has(k)); if (doc.activeElement === canvas) nextTip(); }
   }
 
   const gateToken = (ch) => CHARACTERS[ch].gate;
@@ -250,6 +295,12 @@ export function startGame({ core = null, backend = null, doc = document, startLe
       }
       return;
     }
+    if (S.phase === 'tip') {
+      if (a.type === 'menu') closeTips();
+      else if (a.type !== 'info' && a.type !== 'select') nextTip();
+      return;
+    }
+    if (a.type === 'tipAt') { closeTips(); S.tipQueue = []; if (showTipFor(a.key)) S.phase = 'tip'; return; }
     if (S.phase === 'info') {
       if (['menu', 'confirm', 'info', 'skill'].includes(a.type)) { S.phase = S.infoFrom; hud.hideInfo(); }
       return;
@@ -305,9 +356,26 @@ export function startGame({ core = null, backend = null, doc = document, startLe
   const refocus = () => setTimeout(() => canvas.focus(), 0);
   stage.addEventListener('mousedown', refocus);
   appEl.addEventListener('click', (e) => { if (e.target.closest('button')) refocus(); });
-  canvas.addEventListener('focus', () => hud.setFocusOverlay(false));
+  canvas.addEventListener('focus', () => { hud.setFocusOverlay(false); if (S.phase === 'play' && S.tipQueue.length) nextTip(); });
+  doc.getElementById('tip').addEventListener('click', () => { enqueue({ type: 'confirm' }); refocus(); });
   canvas.addEventListener('blur', () => hud.setFocusOverlay(true));
   hud.setFocusOverlay(doc.activeElement !== canvas);
+
+  // click an element to read its explanation again
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+    if (S.phase === 'tip') { enqueue({ type: 'confirm' }); return; }
+    if (S.phase !== 'play') return;
+    const ox = Math.floor((16 - S.grid.w) / 2), oy = Math.floor((10 - S.grid.h) / 2);
+    const x = Math.floor(px / 48) - ox, y = Math.floor(py / 48) - oy;
+    let key = null;
+    if (S.stars.some((q) => q.x === x && q.y === y)) key = 'star';
+    else if ((S.chasers || []).some((c) => c.x === x && c.y === y)) key = 'chaser';
+    else key = elementKey(tileAt(S.grid, x, y));
+    if (key) enqueue({ type: 'tipAt', key });
+  });
 
   // card buttons, top bar buttons, settings dropdown
   doc.getElementById('card').addEventListener('click', (e) => {

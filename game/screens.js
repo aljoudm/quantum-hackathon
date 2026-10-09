@@ -35,6 +35,7 @@ export function createScreens(doc, onAction) {
       `<button class="toggle ${ctx.settings[key] ? 'on' : ''}" data-action="toggle" data-value="${key}"><b>${ctx.settings[key] ? 'ON ' : 'OFF'}</b> ${label}<br><span class="small">${hint}</span></button>`;
     return `<h1>Settings</h1><div class="col">` +
       row('guide', 'Guide panel (left)', 'Mission, what is happening now, instructions and hints.') +
+      row('tips', 'Element pop-ups', 'Explains each maze element the first time it appears. You can always click an element.') +
       row('calm', 'Calm effects', 'Turns off screen flashes and shaking.') +
       `</div><div class="row"><button data-action="reset">Reset progress</button><button data-action="back">Back</button></div>`;
   }

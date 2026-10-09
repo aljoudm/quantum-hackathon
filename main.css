@@ -152,3 +152,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #12121f; }
 /* scale overlay text with the stage */
 #stage { font-size: calc(13px * max(var(--u, 1), .75)); }
 #toast { font-size: inherit; }
+#tip { position: absolute; z-index: 7; width: min(330px, 46%); background: #121228; border: 2px solid #fff; border-radius: 6px; padding: 8px 10px; font-size: calc(12px * max(var(--u, 1), .8)); line-height: 1.35; box-shadow: 0 4px 16px rgba(0,0,0,.6); }
+#tip h3 { margin: 0 0 4px; font-size: 1.15em; color: #ffd54f; }
+#tip p { margin: 3px 0; }
+#tip .q { color: #cfd8ff; }

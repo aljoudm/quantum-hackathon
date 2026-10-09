@@ -167,6 +167,24 @@ export function createHud(doc, handlers = {}) {
   }
   function showInfo(html) { el.info.innerHTML = html; el.info.hidden = false; }
   function hideInfo() { el.info.hidden = true; }
+  function showTip(html, pos) {
+    const t = $('tip');
+    t.innerHTML = html;
+    t.hidden = false;
+    t.style.left = '0px'; t.style.top = '0px';
+    const stage = $('stage');
+    const sw = stage.clientWidth, sh = stage.clientHeight;
+    const w = t.offsetWidth, h = t.offsetHeight;
+    // pos is the tile rectangle in stage pixels: put the pop-up beside it
+    let x = pos.x + pos.w + 10;
+    if (x + w > sw - 6) x = pos.x - w - 10;
+    if (x < 6) x = Math.max(6, Math.min(sw - w - 6, pos.x));
+    let y = pos.y + pos.h / 2 - h / 2;
+    y = Math.max(6, Math.min(sh - h - 6, y));
+    if (x < pos.x + pos.w && x + w > pos.x) y = pos.y > sh / 2 ? Math.max(6, pos.y - h - 10) : Math.min(sh - h - 6, pos.y + pos.h + 10);
+    t.style.left = Math.round(x) + 'px'; t.style.top = Math.round(y) + 'px';
+  }
+  function hideTip() { $('tip').hidden = true; }
   function hideNotebook() { el.notebook.hidden = true; }
   function setNow(lines) {
     for (const [k, text] of Object.entries(lines)) {
@@ -200,5 +218,5 @@ export function createHud(doc, handlers = {}) {
   function setFocusOverlay(visible) { el.focus.hidden = !visible; }
 
   return { setChars, shake, setBar, setWheel, setHint, setSteps, toast, flashCombo, setNotebookCount,
-    showCard, hideCard, showInfo, hideInfo, showNotebook, hideNotebook, setGhost, setNow, setMission, setStars, setLevel, setFocusOverlay, elements: el };
+    showCard, hideCard, showTip, hideTip, showInfo, hideInfo, showNotebook, hideNotebook, setGhost, setNow, setMission, setStars, setLevel, setFocusOverlay, elements: el };
 }

@@ -13,7 +13,7 @@ const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-await page.goto('http://127.0.0.1:8140/dev.html');
+await page.goto('http://127.0.0.1:8140/dev.html?notips=1');
 await page.waitForSelector('button[data-action="start"]');
 await page.click('button[data-action="start"]');
 await page.click('button[data-action="begin"]');

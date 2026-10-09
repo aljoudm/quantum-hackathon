@@ -112,3 +112,57 @@ export function changeLine(name, gate, prev, cur) {
   if (cur.world === 'ghost') return head + 'the ghost stays a ghost, but its odds are different.';
   return head + 'no visible change.';
 }
+
+// ---- element explanations: shown the first time an element appears, and on click ----
+export const ELEMENTS = {
+  bridgeDay: {
+    title: 'Day bridge',
+    what: 'Solid only while the world is Day. In Night, or while you are a ghost, it is water.',
+    quantum: 'Day is the world qubit in state |0⟩. Only a definite 0 counts: a superposition is not definitely 0.',
+  },
+  bridgeNight: {
+    title: 'Night bridge',
+    what: 'Solid only while the world is Night. In Day, or while you are a ghost, it is water.',
+    quantum: 'Night is the world qubit in state |1⟩. Only a definite 1 counts. The X gate (Owl) turns |0⟩ into |1⟩.',
+  },
+  gate: {
+    title: 'Ghost gate',
+    what: 'Opens only for a ghost of the matching colour. White gates accept any ghost.',
+    quantum: 'A ghost is a qubit in a superposition of 0 and 1. Its colour is the relative phase between the two parts, a multiple of 90°. S adds 90°, Z adds 180°.',
+  },
+  eye: {
+    title: 'The Eye',
+    what: 'Step on it to look at the world: a ghost is forced to become Day or Night.',
+    quantum: 'This is a measurement. It takes the qubit out of superposition and fixes it to 0 or 1, at random, with probabilities set by its amplitudes (50/50 for a ghost).',
+  },
+  door: {
+    title: 'Magic door',
+    what: 'You can only walk through when it is open. The Cat can flip it, standing next to it.',
+    quantum: 'The door is a second qubit: closed is 0, open is 1. The Cat\'s CNOT flips it only if the world qubit is 1. On a ghost, CNOT entangles the two qubits.',
+  },
+  star: {
+    title: 'Star',
+    what: 'A collectible. Collect enough of them to unlock the finish.',
+    quantum: 'Only a game score, not physics. The quantum puzzles are in reaching them.',
+  },
+  finish: {
+    title: 'Finish',
+    what: 'Ends the level. It stays grey and locked until you have enough stars.',
+    quantum: 'A game rule, not physics.',
+  },
+  chaser: {
+    title: 'Noise',
+    what: 'A wisp that follows you through the maze. If it catches you, the level restarts.',
+    quantum: 'It stands for decoherence: noise from the environment that disturbs qubits and destroys their quantum behaviour, so real quantum computers must work fast.',
+  },
+};
+
+export function elementKey(ch) {
+  if (ch === 'D') return 'bridgeDay';
+  if (ch === 'N') return 'bridgeNight';
+  if ('0123?'.includes(ch)) return 'gate';
+  if (ch === 'E') return 'eye';
+  if (ch === 'M') return 'door';
+  if (ch === 'G') return 'finish';
+  return null;
+}

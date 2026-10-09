@@ -24,7 +24,7 @@ const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
 page.on('pageerror', (e) => errors.push(String(e)));
 const START = Number(process.env.START_LEVEL || 1);
-await page.goto(`http://127.0.0.1:${PORT}/dev.html?level=${START}&unlock=1`);
+await page.goto(`http://127.0.0.1:${PORT}/dev.html?level=${START}&unlock=1&notips=1`);
 await page.waitForFunction(() => window.__game && window.__game.state.level);
 await page.click('#focus-overlay');
 await page.waitForFunction(() => document.activeElement.id === 'game');

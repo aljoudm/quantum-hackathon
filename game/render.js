@@ -146,6 +146,13 @@ export function drawTile(ctx, ch, tx, ty, ox, oy, layer, vis, t, parity) {
 }
 
 
+// Canvas-pixel rectangle of a map tile (the map is centred on the 16x10 canvas).
+export function tileRect(grid, x, y) {
+  const ox = Math.floor((COLS - grid.w) / 2);
+  const oy = Math.floor((ROWS - grid.h) / 2);
+  return { x: (ox + x) * T, y: (oy + y) * T, w: T, h: T };
+}
+
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   ctx.imageSmoothingEnabled = false;
@@ -201,6 +208,15 @@ export function createRenderer(canvas) {
       drawSprite(ctx, S.active || 'none', px - w * 2, py, U, frame, S.facing < 0, 0.45);
     } else {
       drawSprite(ctx, S.active || 'none', px, py, U, frame, S.facing < 0, 1);
+    }
+    if (S.tipTile) {
+      const r = tileRect(S.grid, S.tipTile.x, S.tipTile.y);
+      ctx.save();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = 0.6 + 0.4 * Math.sin(t / 150);
+      ctx.strokeRect(r.x - 2, r.y - 2, r.w + 4, r.h + 4);
+      ctx.restore();
     }
     // snap effect after a measurement
     const age = t - S.snapAt;
